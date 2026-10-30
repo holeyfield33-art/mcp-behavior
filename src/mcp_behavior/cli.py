@@ -29,7 +29,7 @@ def readable(report: dict[str, Any]) -> str:
     for check in report.get("checks", []):
         lines.append("| " + " | ".join(cell(check[k]) for k in ("id", "lane", "status", "reason")) + " |")
     lines.extend(["", "## Assessment identity", "", "```json", json.dumps({k: report[k] for k in
-                  ("target", "profile", "config_sha256", "limits") if k in report}, indent=2, ensure_ascii=True), "```", "",
+                  ("target", "profile", "config_sha256", "limits", "isolation") if k in report}, indent=2, ensure_ascii=True), "```", "",
                   "## Limits on the conclusion", ""])
     lines.extend("- " + cell(x) for x in report.get("limitations", []))
     if report.get("harness_errors"):
@@ -76,27 +76,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.native and args.isolation != "native":
         parser.error("--native conflicts with --isolation " + args.isolation)
 
-    from .isolation import ExecutionMode, IsolationPolicy, get_backend
-    backend = get_backend(args.isolation)
-    policy = IsolationPolicy(
-        mode=ExecutionMode(args.isolation),
-        server_uid=args.server_uid,
-        server_gid=args.server_gid,
-    )
-    preflight = backend.preflight(policy)
-    if not preflight.ok:
-        # Fail closed: do not launch the subject when required controls are missing.
-        print(json.dumps({
-            "run_id": str(uuid.uuid4()),
-            "verdict": "INCOMPLETE",
-            "harness_error": "isolation preflight failed",
-            "isolation": {
-                "mode": args.isolation,
-                "reasons": preflight.reasons(),
-                "observed": preflight.observed,
-            },
-        }))
-        return 2
     run_id = str(uuid.uuid4())
     try:
         if args.output.suffix != ".json":
@@ -111,8 +90,10 @@ def main(argv: list[str] | None = None) -> int:
                    "verdict": "INCOMPLETE", "state": "RUNNING", "checks": []}
         atomic_write(args.output, json.dumps(pending, indent=2) + "\n")
         atomic_write(args.output.with_suffix(".md"), "# MCP Behavior assessment\n\nINCOMPLETE: run has not finished.\n")
+        from .isolation import get_backend
+        backend = get_backend(args.isolation)
         report = Runner(config, args.server_uid, args.server_gid,
-                        isolation_backend=backend, isolation_preflight=preflight).run()
+                        isolation_backend=backend).run()
         report["run_id"] = run_id
         report["state"] = "FINISHED"
         # JSON is the authoritative commit marker for this pair of files.
