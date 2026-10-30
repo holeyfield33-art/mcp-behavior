@@ -1,0 +1,2 @@
+# CommonMark uses two trailing spaces for an explicit line break.
+*.md whitespace=-blank-at-eol

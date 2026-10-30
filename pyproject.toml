@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-behavior"
+version = "0.1.0"
+description = "Independent behavioral assessment harness for MCP servers"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Aletheia Sovereign Systems"}]
+
+[project.scripts]
+mcp-behavior = "mcp_behavior.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
