@@ -1,32 +1,26 @@
 {
+  "schema_version": "mcp-behavior-config/v1",
+  "command": ["${python}", "${config_dir}/reference_server.py"],
   "identity": {
-    "label": "reference-inventory",
-    "version": "0.1.0"
+    "name": "reference-inventory",
+    "version": "0.1.0",
+    "artifacts": ["${config_dir}/reference_server.py"]
   },
-  "server": {
-    "argv": ["${python}", "${config_dir}/reference_server.py"],
-    "cwd": null
-  },
-  "tool": {
-    "name": "inventory_files",
-    "path_arg": "root",
-    "extra_args": {}
-  },
+  "limits": {"timeout_seconds": 5},
   "profile": {
-    "name": "read-only-repo-inventory",
+    "id": "readonly-repository",
     "version": "1.0.0",
+    "tool": "inspect_repository",
+    "path_argument": "path",
     "supported_suffixes": [".py", ".js", ".txt"],
-    "relative_path_policy": "reject",
-    "wire_byte_budget": 65536,
-    "timestamp_paths": []
-  },
-  "mappings": {
-    "processed": "/processed",
-    "excluded": "/excluded",
-    "failed": "/failed",
-    "path_field": "path",
-    "reason_field": "reason",
-    "hash_field": "sha256",
-    "complete_field": "/complete"
+    "relative_paths": "reject",
+    "ignored_timestamps": ["/generated_at"],
+    "observations": {
+      "processed": {"pointer": "/processed", "path": "/path", "sha256": "/sha256"},
+      "excluded": {"pointer": "/excluded", "path": "/path", "reason": "/reason"},
+      "failed": {"pointer": "/failed", "path": "/path", "reason": "/reason"},
+      "complete": "/complete",
+      "counts": {"processed": "/counts/processed", "excluded": "/counts/excluded", "failed": "/counts/failed"}
+    }
   }
 }
