@@ -51,6 +51,12 @@ The backend interface, feature probes, runner/report wiring and CLI selection ar
 
 Native execution retains required containment UNKNOWN and the existing behavioral checks. Requested resource limits come from the run configuration; feature-file presence is recorded as a probe observation, not as proof that a namespace/cgroup policy was enforced. Even a successful feature probe cannot authorize a namespace launch at this checkpoint.
 
+### Checkpoint 2 partial behavior
+
+Namespace preflight now collects candidate tool and synthetic filesystem-probe evidence. Only the fixed controller-owned helper is launched; arbitrary subject launch remains disabled both in `launch_subject()` and in Runner. Missing tools, failed namespace operations, invalid fixture preconditions, malformed evidence, output overflow and timeouts remain explicit failed preconditions, so the run is INCOMPLETE with zero subject cases.
+
+A successful synthetic host-path probe cannot waive the required run-level oracle/controller, network, aggregate-resource or teardown gates. Probe limits and process-group cleanup are helper backstops, not the cgroup subject supervisor. Native behavior and its containment UNKNOWN are unchanged. See ROADMAP sections 2-5 for the acceptance matrix and remaining work.
+
 ## Alternatives considered
 
 | Alternative | Why not now |

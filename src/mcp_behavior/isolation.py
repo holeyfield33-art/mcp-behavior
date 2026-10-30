@@ -6,13 +6,16 @@ controls cannot be observed. There is no silent fallback to native.
 """
 from __future__ import annotations
 
-import errno
 import os
 import sys
+import tempfile
+import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Callable
+
+from .namespace_runtime import LaunchPlan, ProbeResult, prepare_isolation_dirs, run_host_canary_probe, tool_preflight
 
 
 class ExecutionMode(StrEnum):
@@ -164,22 +167,48 @@ class NamespaceBackend(IsolationBackend):
             required=True,
         ))
 
+        tools = tool_preflight()
+        observed["namespace_tools"] = {"ok": tools.ok, "detail": tools.detail, **tools.evidence}
+        findings.append(PreflightFinding("namespace_tools", tools.ok, tools.detail))
+        probe = ProbeResult(False, f"probe not run: {tools.detail}")
+        if tools.ok:
+            try:
+                with tempfile.TemporaryDirectory(prefix="mcp-behavior-isolation-") as tmp:
+                    base = Path(tmp)
+                    workspace = base / "workspace"
+                    workspace.mkdir(mode=0o700)
+                    token = uuid.uuid4().hex
+                    canary, oracle_dir, _ = prepare_isolation_dirs(base, token)
+                    plan = LaunchPlan(workspace, [], canary, oracle_dir,
+                                      policy.memory_mib, policy.cpu_seconds, policy.max_pids)
+                    probe = run_host_canary_probe(plan, token)
+            except (OSError, ValueError) as exc:
+                probe = ProbeResult(False, f"probe fixture setup failed: {exc}")
+        observed["host_path_probe"] = {"ok": probe.ok, "detail": probe.detail, "evidence": probe.evidence}
+        findings.append(PreflightFinding("host_path_probe", probe.ok, probe.detail))
+
         findings.append(PreflightFinding(
             "launcher_implemented",
             False,
-            "namespace subject launcher and external observers are not implemented yet (checkpoint 2+)",
+            "candidate namespace layout exists; supervised subject launch is not integrated",
             required=True,
         ))
         findings.append(PreflightFinding(
             "oracle_storage_protection",
             False,
-            "oracle/report path isolation not yet externally verified",
+            "synthetic probe does not verify actual run oracle/report storage or controller protection",
             required=True,
         ))
         findings.append(PreflightFinding(
             "network_denial",
             False,
             "network namespace denial not yet externally verified",
+            required=True,
+        ))
+        findings.append(PreflightFinding(
+            "aggregate_resources",
+            False,
+            "cgroup-wide resource limits not yet enforced or externally verified",
             required=True,
         ))
         findings.append(PreflightFinding(
