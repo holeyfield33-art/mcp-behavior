@@ -1,6 +1,6 @@
 # Version 0.2.0 — isolated-runner acceptance plan
 
-Status: planned, not implemented. Review date: 2026-10-30.
+Status: checkpoint 1 merged; checkpoint 2 partial and subject launch disabled. Review date: 2026-10-30.
 
 One development slice: run the existing stdio inventory profile in an independently validated Linux isolation backend. Keep the v0.1.0 profile and reference controls working. Do not add HTTP, authentication, tool families, a model judge or commercial features in this slice.
 
@@ -52,3 +52,19 @@ Release 0.2.0 only after relevant tests, a fresh installed-wheel smoke, the acce
 Keep this claim narrow: a named artifact and configuration passed a finite named profile under verified execution/observation conditions. It is not a universal claim that an arbitrary MCP server or hostile binary is safe. Full dependency identity, kernel trust and any remaining observer limits must be disclosed.
 
 The fixed Sentinel-Zero retest remains a separate first-proof gate. Record the actual changed subject revision; reuse the four behavioral requirements and independently reviewed profile. Inventory evidence cannot establish scanner finding accuracy. Additional profiles remain deferred until these gates are complete.
+
+
+## 5. Progress log
+
+| Date | Checkpoint | Evidence and remaining gates |
+|---|---|---|
+| 2026-10-30 | 1, merged PR #1 | Interface, fail-closed preflight, CLI and Runner wiring; 48 tests. Native containment remains UNKNOWN. |
+| 2026-10-30 | 2, partial | Candidate bubblewrap layout and bounded trusted filesystem helper wired into NamespaceBackend preflight. Known private host secrets are verified before probing; malformed, incomplete, wrong-run or unexpected-I/O evidence fails closed. Probe and candidate subject layout use the same absolute workspace mount. |
+
+This checkpoint may run only controller-owned probe code. `launch_subject()` refuses all subject commands, and Runner retains its independent namespace launch gate. Tool discovery and synthetic probe success do not authorize a server launch or a containment PASS. No cgroup limits are claimed as enforced.
+
+The helper receives a minimal environment and no inherited controller descriptors beyond stdio. Output is bounded at 16 KiB combined stdout/stderr before decoding, with a five-second deadline. JSON must contain every typed access result and the current probe nonce. Preexisting fixture destinations are never overwritten. Missing, changed, empty, symlinked or exposed secrets cannot satisfy the fixture precondition. A protected path inside a candidate mount is rejected rather than earning credit from path remapping.
+
+The probe only checks named synthetic paths in its own namespace. It does not establish arbitrary forbidden-read coverage, transient-write coverage, race resistance or protection in a later server namespace. The candidate runtime still exposes read-only host runtime trees; its dependency closure is not sealed. All of sections 2-4 remain acceptance gates.
+
+Still open: supervised Runner/transport integration, run-level oracle/controller protection, externally observed network denial, cgroup aggregate limits and descendant teardown, the remaining external observer matrix, and a live positive/negative containment proof on a supported host. A missing or blocked bubblewrap capability remains explicit INCOMPLETE evidence. The fixed Sentinel-Zero acceptance retest remains separate.
