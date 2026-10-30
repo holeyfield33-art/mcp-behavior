@@ -104,7 +104,8 @@ def main(argv: list[str] | None = None) -> int:
         backend = get_backend(args.isolation)
         report = Runner(config, args.server_uid, args.server_gid,
                         isolation_backend=backend, cgroup_parent=args.cgroup_parent,
-                        namespace_subject=args.namespace_subject).run()
+                        namespace_subject=args.namespace_subject,
+                        protected_paths=(*destinations, args.config.resolve())).run()
         report["run_id"] = run_id
         report["state"] = "FINISHED"
         # JSON is the authoritative commit marker for this pair of files.

@@ -32,7 +32,8 @@ class Runner:
     def __init__(self, config: Config, uid: int | None = None, gid: int | None = None,
                  isolation_backend: IsolationBackend | None = None,
                  isolation_preflight: PreflightResult | None = None,
-                 cgroup_parent: Path | None = None, namespace_subject: bool = False):
+                 cgroup_parent: Path | None = None, namespace_subject: bool = False,
+                 protected_paths: tuple[Path, ...] = ()):
         if sys.platform != "linux":
             raise HarnessError("v1 requires Linux")
         if uid is not None and (type(uid) is not int or uid <= 0 or os.geteuid() != 0):
@@ -40,6 +41,7 @@ class Runner:
         if gid is not None and (uid is None or gid < 0):
             raise HarnessError("--server-gid requires --server-uid and a nonnegative GID")
         self.config = config
+        self.protected_paths = protected_paths
         self.uid, self.gid = uid, gid
         self.isolation_backend = isolation_backend if isolation_backend is not None else NativeBackend()
         self.isolation_policy = IsolationPolicy(
@@ -76,7 +78,7 @@ class Runner:
     def subject_session(self) -> SubjectSession:
         if self.isolation_backend.mode != ExecutionMode.NAMESPACE or not self.execution_allowed():
             raise HarnessError("namespace subject launch prerequisites not satisfied")
-        return SubjectSession(Path(self.isolation_policy.cgroup_parent), self.config.limits)
+        return SubjectSession(Path(self.isolation_policy.cgroup_parent), self.config.limits, self.protected_paths)
 
     def isolation_evidence(self) -> dict[str, Any]:
         return {"mode": self.isolation_backend.mode.value,
@@ -138,7 +140,8 @@ print(json.dumps(result))
                         session.close()
                     finally:
                         fixture.preconditions["namespace_permission_session"] = session.evidence
-                        if not session.evidence.get("cleanup", {}).get("ok", False):
+                        if (not session.evidence.get("cleanup", {}).get("ok", False)
+                                or session.evidence.get("observer_error")):
                             self.namespace_aborted = True
                 probe_stdout = stdout
             else:
@@ -312,7 +315,8 @@ print(json.dumps(result))
                     self.add(label + ".cleanup", "security", Status.UNKNOWN, "server cleanup could not be confirmed")
             if session is not None:
                 evidence["subject_session"] = session.evidence
-                if not session.evidence.get("cleanup", {}).get("ok", False):
+                if (not session.evidence.get("cleanup", {}).get("ok", False)
+                        or session.evidence.get("observer_error")):
                     self.namespace_aborted = True
                 if session.evidence.get("final_resource_error"):
                     self.add(label + ".resource_evidence", "security",
@@ -348,7 +352,7 @@ print(json.dumps(result))
             for name in CASES:
                 if self.namespace_aborted:
                     self.add(name + ".isolation_aborted", "readiness", Status.UNKNOWN,
-                             "earlier namespace teardown was unverified; no further subject sessions allowed")
+                             "earlier namespace teardown or observation was unverified; no further subject sessions allowed")
                     continue
                 if time.monotonic() >= self.suite_deadline:
                     self.add(name + ".suite_budget", "readiness", Status.UNKNOWN, "suite budget exhausted; scenario was not run")

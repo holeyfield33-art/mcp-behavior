@@ -4,7 +4,7 @@ A standalone Linux CLI that drives a running MCP server and checks its behavior 
 
 The question is narrow: **can a caller rely on this tool's results and failure reports, under this versioned profile?** The server's description is never the answer key. The Python package uses only the standard library. Namespace preflight additionally needs Linux bubblewrap and an explicitly delegated cgroup-v2 directory.
 
-**Status: development version `0.2.0.dev4`, experimental checkpoint 4; the original behavioral prototype was 0.1.0.** Native mode runs reviewed subjects and always keeps containment UNKNOWN. Namespace mode defaults to fixed trusted helpers and zero MCP subjects. Explicit `--namespace-subject` enables reviewed subject sessions only after the required helper probes pass. Overall containment remains UNKNOWN; the full run-level matrix is incomplete. Version 0.2.0 has not been released.
+**Status: development version `0.2.0.dev5`, experimental checkpoint 4; the original behavioral prototype was 0.1.0.** Native mode runs reviewed subjects and always keeps containment UNKNOWN. Namespace mode defaults to fixed trusted helpers and zero MCP subjects. Explicit `--namespace-subject` enables reviewed subject sessions only after the required helper probes pass. Overall containment remains UNKNOWN; the full run-level matrix is incomplete. Version 0.2.0 has not been released.
 
 ## Run the first proof
 
@@ -85,6 +85,16 @@ MCP_BEHAVIOR_CGROUP_PARENT=/sys/fs/cgroup/YOUR_DELEGATED_DIRECTORY \
 MCP_BEHAVIOR_SUBJECT_LIVE=1 PYTHONPATH=src \
   python -m unittest discover -s tests -v
 ```
+
+The finite actual-subject acceptance tests additionally require `strace` for a
+controller-owned syscall observer. Set `MCP_BEHAVIOR_ACCEPTANCE_OUTPUT` to a
+project-named output directory to retain each control's machine-readable evidence.
+They cover deliberate storage/process/TCP attempts, an intentionally unsafe mount/
+network control, aggregate CPU/memory intervention, per-file storage limits,
+crashed parents/late writers, and an interrupted observer. A private report-path
+shadow inside sandbox tmpfs is distinguished from a change to the host report's
+inode. Aggregate disk quota, general egress and read/write/race coverage remain
+UNKNOWN. See [the finite matrix](docs/SUBJECT_ACCEPTANCE.md).
 
 | Helper evidence | What it establishes |
 |---|---|

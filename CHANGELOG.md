@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — 0.2.0.dev5, finite subject acceptance, 2026-10-30
+
+- Reject protected report/config/oracle mount overlaps and explicit artifact
+  hardlink aliases; the CLI supplies its actual report and config destinations.
+- Abort later namespace sessions after resource-observer loss, including OSError,
+  while preserving resource intervention versus missing-evidence attribution.
+- Add actual MCP attack controls with external syscall/process/TCP observations,
+  unsafe-layout detection, CPU/memory/PID/file-limit interventions, crashed/late
+  descendants and interrupted-observer acceptance. Preserve full containment
+  UNKNOWN; aggregate storage quota and the wider read/write/race matrix stay open.
+- Expand live CI to retain finite subject evidence; hosted execution is still
+  subject to the account's known billing lock.
+
 ## Unreleased — 0.2.0.dev4, experimental checkpoint 4, 2026-10-30
 
 - Add explicit `--namespace-subject` opt-in after policy-bound host-path, network

@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .config import Limits
+from .config import Limits, digest
 from .model import HarnessError, ServerFault
 from .namespace_runtime import LaunchPlan, RUNTIME_PATHS, _bwrap_command, which_bwrap
 from .supervisor import CgroupScope, ResourceLimitExceeded, SupervisorLimits, _wait_ready
@@ -40,7 +40,7 @@ os.execv(sys.argv[6], sys.argv[6:])
 
 
 def subject_command(command: tuple[str, ...], workspace: Path, cwd: Path,
-                    artifacts: tuple[Path, ...]) -> list[str]:
+                    artifacts: tuple[Path, ...], protected_paths: tuple[Path, ...] = ()) -> list[str]:
     """Do not expose a source directory just to make an import succeed."""
     if (workspace.resolve(strict=True) != workspace or cwd.resolve(strict=True) != cwd
             or not cwd.is_relative_to(workspace)):
@@ -59,6 +59,12 @@ def subject_command(command: tuple[str, ...], workspace: Path, cwd: Path,
     argv = _bwrap_command(plan, bwrap, [])[:-1]  # remove final --
     argv.extend(["--chdir", str(cwd)])
     exposed = (workspace, *(Path(p).resolve() for p in RUNTIME_PATHS if Path(p).exists()))
+    protected = tuple(path.resolve() for path in protected_paths)
+    protected_inodes = {(info.st_dev, info.st_ino) for path in protected if path.exists()
+                        for info in (path.stat(),)}
+    if any(path.is_relative_to(root) or root.is_relative_to(path)
+           for path in protected for root in exposed):
+        raise HarnessError("protected oracle/report/config path overlaps a namespace mount")
     executable = Path(command[0])
     # Interpreter symlinks in runtime roots (e.g. /usr/bin/python3) are already
     # visible there. Other executable and artifact aliases are refused.
@@ -70,6 +76,9 @@ def subject_command(command: tuple[str, ...], workspace: Path, cwd: Path,
             raise HarnessError("namespace artifacts must be canonical regular files")
         if path.is_relative_to(workspace):
             raise HarnessError("namespace artifact overlaps writable fixtures")
+        info = path.stat()
+        if path in protected or (info.st_dev, info.st_ino) in protected_inodes:
+            raise HarnessError("namespace artifact overlaps protected oracle/report/config storage")
         if any(path.is_relative_to(root) for root in exposed[1:]):
             continue
         if any(path.is_relative_to(Path(root)) for root in ("/proc", "/dev", "/sys")):
@@ -81,19 +90,22 @@ def subject_command(command: tuple[str, ...], workspace: Path, cwd: Path,
 class SubjectSession:
     """Own process and cgroup as one lifetime, including launch failure."""
 
-    def __init__(self, parent: Path, limits: Limits):
+    def __init__(self, parent: Path, limits: Limits, protected_paths: tuple[Path, ...] = ()):
         self.scope = CgroupScope(parent, SupervisorLimits(limits.memory_mib, limits.cpu_seconds, 64))
         self.limits = limits
+        self.protected_paths = protected_paths
         self.process: subprocess.Popen | None = None
         self.closed = False
         self.evidence: dict[str, Any] = {"backend": "namespace", "scope": str(self.scope.path),
-                                         "joined_before_release": False}
+                                         "joined_before_release": False,
+                                         "protected_paths": [str(p) for p in protected_paths]}
 
     def start(self, command: tuple[str, ...], workspace: Path, cwd: Path,
               artifacts: tuple[Path, ...], deadline: float) -> subprocess.Popen:
         fds: list[int] = []
         try:
-            argv = subject_command(command, workspace, cwd, artifacts)
+            self.evidence["command_sha256"] = digest(command)
+            argv = subject_command(command, workspace, cwd, artifacts, self.protected_paths)
             self.scope.prepare()
             self.evidence["effective_limits"] = dict(self.scope.effective)
             group = os.open("cgroup.procs", os.O_WRONLY | os.O_CLOEXEC | os.O_NOFOLLOW, dir_fd=self.scope.fd)
@@ -134,11 +146,12 @@ class SubjectSession:
     def check(self) -> None:
         try:
             self.evidence["usage"] = self.scope.check_budget()
-        except ValueError as exc:
+        except (OSError, ValueError) as exc:
             self.evidence["resource_error"] = str(exc)
             # Missing/malformed observation is a harness fault, not server blame.
             if isinstance(exc, ResourceLimitExceeded):
                 raise ServerFault("resource_limit", str(exc), dict(self.evidence)) from exc
+            self.evidence["observer_error"] = str(exc)
             raise HarnessError(f"subject resource observation failed: {exc}") from exc
 
     def close(self) -> None:
@@ -167,6 +180,8 @@ class SubjectSession:
                 except (OSError, ValueError) as exc:
                     self.evidence["final_resource_error"] = str(exc)
                     self.evidence["final_resource_intervention"] = isinstance(exc, ResourceLimitExceeded)
+                    if not isinstance(exc, ResourceLimitExceeded):
+                        self.evidence["observer_error"] = str(exc)
         finally:
             self.evidence["cleanup"] = self.scope.cleanup()
             for handle in handles:

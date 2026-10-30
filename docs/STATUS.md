@@ -1,6 +1,6 @@
 # Implementation and proof status
 
-Updated 2026-10-30. Repository: https://github.com/holeyfield33-art/mcp-behavior. Development package version: **0.2.0.dev4**. Development target: **0.2.0**, not released.
+Updated 2026-10-30. Repository: https://github.com/holeyfield33-art/mcp-behavior. Development package version: **0.2.0.dev5**. Development target: **0.2.0**, not released.
 
 Decision: **GO for reviewed local behavioral runs and trusted-helper development; NO-GO for arbitrary hostile MCP subjects, broad security certification or a containment PASS.**
 
@@ -12,6 +12,7 @@ Decision: **GO for reviewed local behavioral runs and trusted-helper development
 | 2 — candidate namespace layout | Merged PR #2; bounded trusted host-path helper, private fixtures, strict nonce/schema validation | 76-test checkpoint baseline; actual subject launch intentionally disabled |
 | 3 — supervision and network observations | Merged PR #3 (`d434494`); controller-owned IPv4/IPv6 TCP listeners and cgroup-v2 helper supervision | User-recorded capable-host evidence: 109 passed, zero skipped; all helper probes green in a privileged Ubuntu 24.04 Docker Desktop/WSL2 container |
 | 4 — experimental subject sessions | Explicit `--namespace-subject`, policy-bound probe gate, per-session cgroup, membership-before-release, bounded MCP transport and recursive teardown | In development on a branch from `d434494`; see [design and acceptance criteria](CHECKPOINT4.md). Default remains helper-only |
+| Finite actual-subject acceptance | Protected-path/artifact alias guards, external syscall/process/TCP observations, deliberately unsafe control, aggregate CPU/memory stress, crash/late writers and observer interruption | Implemented and locally exercised; see [the finite matrix](SUBJECT_ACCEPTANCE.md). This does not close the full containment matrix |
 | Run-level containment | Partial session integration; no containment PASS | Full protected oracle/controller storage, egress, resource-intervention and descendant/race matrix remains required |
 | External read/write/race coverage | Not implemented | Quiet canaries and final snapshots remain insufficient |
 | Fixed Sentinel-Zero acceptance | Pending | Reference control cannot substitute for a fixed real-subject retest |
