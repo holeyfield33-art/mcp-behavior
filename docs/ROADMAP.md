@@ -76,3 +76,5 @@ Checkpoint 3 control contract: the delegated parent must be canonical, genuinely
 The opt-in live cgroup test uses MCP_BEHAVIOR_CGROUP_PARENT; it is explicitly skipped without a delegated host. Contract tests with ordinary files do not replace that acceptance. All server launch gates and all rows of the full acceptance matrix remain required.
 
 Checkpoint 3 is identified in package metadata and reports as `0.2.0.dev3`; this development version does not grant a stable 0.2.0 release or containment verdict.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.

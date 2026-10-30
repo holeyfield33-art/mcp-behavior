@@ -49,3 +49,5 @@ Historical real-subject readiness/security/overall: FAIL. The independent correc
 Archived evidence: `proof/summary.json`, `proof/reference.{json,md}`, `proof/sentinel-zero.{json,md}`, `proof/negative-controls.json`, logs and explicit source hashes. Archived configurations contain machine-specific launch paths and must be reviewed before reuse.
 
 Next: run the helper integration on a capable explicitly delegated Linux host, preserve its artifact/config/policy identities and negative controls, then integrate supervised subject transport without waiving the acceptance matrix in [ROADMAP.md](ROADMAP.md). HTTP/auth, new profile families, real-model scoring and commercial features remain outside this slice.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.

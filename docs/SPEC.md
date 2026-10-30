@@ -115,3 +115,5 @@ A skipped host integration test is missing acceptance evidence. A fake control-f
 The two additional overview/directory URLs supplied with the vision were not retrievable during this review and were not used as technical authorities.
 
 Checkpoint 3 is identified in package metadata and reports as `0.2.0.dev3`; this development version does not grant a stable 0.2.0 release or containment verdict.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.

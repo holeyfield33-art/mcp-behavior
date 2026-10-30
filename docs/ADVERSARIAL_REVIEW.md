@@ -90,3 +90,5 @@ These are not waved through as successful tests. Native containment is required 
 Default validation includes an explicitly skipped live cgroup integration test. Ordinary-file contract models and this host's blocked namespace operation cannot establish a positive kernel containment result. The open-risk table above remains in force; no security-certification gate is closed by these helper observations alone.
 
 Checkpoint 3 is identified in package metadata and reports as `0.2.0.dev3`; this development version does not grant a stable 0.2.0 release or containment verdict.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.

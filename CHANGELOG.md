@@ -33,3 +33,5 @@ Merged [PR #1](https://github.com/holeyfield33-art/mcp-behavior/pull/1), main co
 ## 0.1.0 prototype — 2026-10-29
 
 Standalone stdlib Linux behavioral harness: bounded stdio transport, reviewer-owned profiles, independent fixtures/oracle, readiness/security lanes, deterministic recovery and atomic JSON/Markdown reports. Original 38-test proof detected four Sentinel-Zero behavior defects; correct reference readiness passed and native overall remained INCOMPLETE. Original proof artifacts are retained unchanged under proof/. A fixed real-subject retest remains pending.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
