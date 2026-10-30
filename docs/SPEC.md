@@ -96,7 +96,7 @@ This spec closes policy ambiguity by either implementing a check or explicitly w
 
 The behavioral profile and specification version remain 1.0.0. Development checkpoint 3 adds trusted infrastructure observations without changing fixture scoring or claiming a 0.2.0 release.
 
-`--isolation native` (or `--native`) runs reviewed MCP subjects with required containment UNKNOWN. `--isolation namespace` runs fixed controller-owned preflight helpers only and refuses the configured subject. `--cgroup-parent` optionally supplies an existing explicitly delegated canonical cgroup-v2 path for a fixed detached-helper self-test; it is invalid with native mode. Requested policy and its digest are distinct from observed enforcement.
+`--isolation native` (or `--native`) runs reviewed MCP subjects with required containment UNKNOWN. `--isolation namespace` defaults to fixed controller-owned preflight helpers. Explicit `--namespace-subject` permits experimental supervised sessions after green policy-bound probes; it requires a canonical host-delegated `--cgroup-parent`. The parent is also usable for the helper-only cgroup self-test and is invalid with native mode. Requested policy and its digest are distinct from observed enforcement. Actual session/control evidence does not waive any open containment matrix row.
 
 Infrastructure probes require their own valid fixtures, typed complete evidence, run nonces, bounds and positive/negative controls. A probe timeout, output cutoff, malformed evidence, missing prerequisite or observer/cleanup fault is failed infrastructure evidence, not a demonstrated MCP server defect. All synthetic probe successes still leave required run-level containment UNKNOWN and zero subject cases at this checkpoint.
 

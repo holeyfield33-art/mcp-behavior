@@ -1,6 +1,6 @@
 # MCP Behavior — reviewed SDLC and handoff
 
-Review date: 2026-10-30. Current development package version: **0.2.0.dev3** (original prototype: 0.1.0). Next development target: **0.2.0, one validated Linux isolation backend**. Pre-release isolation helpers through checkpoint 3 are implemented; version 0.2.0 is not released and namespace MCP subject execution remains disabled.
+Review date: 2026-10-30. Current development package version: **0.2.0.dev5** (original prototype: 0.1.0). Next development target: **0.2.0, one validated Linux isolation backend**. Checkpoint 3 helper live evidence is recorded for its stated container environment. Checkpoint 4 adds experimental, explicitly opted-in supervised subject sessions. Version 0.2.0 is not released and containment remains UNKNOWN.
 
 Repository: https://github.com/holeyfield33-art/mcp-behavior
 
@@ -62,10 +62,10 @@ The audit found 16 missing files and 11 differing files; five files already matc
 | Complete source, examples, documentation and original proof on GitHub | Restored, exact baseline tree |
 | Linux stdlib CLI, bounded stdio client and one inventory profile | Implemented |
 | Fixtures, content hashes, canaries, coverage/completion, paths, repeatability, snapshots and scripted repair | Implemented within the stated profile |
-| Automated tests | Original baseline 38; checkpoint 1: 48; checkpoint 2: 76; checkpoint 3: 109 discovered, 108 passed and one live-cgroup integration test explicitly skipped |
+| Automated tests | Original baseline 38; checkpoint 1: 48; checkpoint 2: 76; checkpoint 3 capable-host run: 109 passed, zero skipped. Checkpoint 4 adds contract and explicitly enabled live subject tests |
 | Fresh-clone reference run | Exit 2; readiness PASS; security INCOMPLETE; overall INCOMPLETE; 14 cases; no harness errors |
 | Isolation helpers | Namespace host-path and finite TCP observers; delegated cgroup helper supervision, limit readback and detached-child cleanup contract implemented |
-| Isolated MCP execution and verified run-level containment | Not integrated; namespace subject launch disabled; capable-host positive proof pending |
+| Isolated MCP execution and verified run-level containment | Experimental supervised sessions integrated behind opt-in; full run-level containment matrix remains incomplete |
 | Complete external read/write and race observation | Not implemented |
 | Fixed Sentinel-Zero acceptance run | Pending |
 | Finding-level scanner accuracy | Not established by inventory evidence |
@@ -136,7 +136,7 @@ Before publishing a change, verify a fresh checkout rather than a worktree with 
 The final two items are future development gates, not prerequisites for acknowledging that the repository repair is complete.
 
 
-## 9. Checkpoint 3 handoff
+## 9. Historical checkpoint 3 handoff
 
 Implementation: fixed trusted infrastructure helpers, not configured MCP commands. Network evidence covers named IPv4/IPv6 loopback TCP endpoints with external receipts and mandatory host positive controls. The cgroup self-test requires genuine delegated v2 controls; it verifies new-leaf limit readback, join-before-release, detached-child membership and recursive kill/empty/removal. CPU bandwidth and sampled lifetime CPU budgets are reported separately. Reported isolation policy has its own digest.
 
@@ -146,4 +146,4 @@ Update every current user-facing document and CHANGELOG.md when checkpoint behav
 
 Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
 
-Hosted verification attempt [41122595917](https://github.com/holeyfield33-art/mcp-behavior/actions/runs/41122595917), on 2026-10-30, failed before the live-helper job executed any steps and produced no job log. Its failure annotation was not retrievable in this session. No positive hosted containment evidence is recorded. [Checkpoint 3 PR #3](https://github.com/holeyfield33-art/mcp-behavior/pull/3) remains unmerged pending successful hosted verification; local validation is 108 passing tests with one explicitly skipped live cgroup test.
+Subsequent state: PR #3 is merged as d434494; local capable-host helper validation is 109 passed, zero skipped. Hosted run 41133686609 never started because of a confirmed account billing lock. Checkpoint 4 and finite actual-subject acceptance supersede this historical handoff; see SUBJECT_ACCEPTANCE.md. Full containment remains UNKNOWN.

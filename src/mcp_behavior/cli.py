@@ -63,10 +63,12 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--native", action="store_true",
                      help="allow host subprocess execution (isolation=native); containment remains UNKNOWN")
     run.add_argument("--isolation", choices=("native", "namespace"), default=None,
-                     help="native development execution or namespace trusted-helper preflight (subject launch disabled). "
+                     help="native development execution or namespace helper preflight. "
                           "No silent fallback between modes.")
     run.add_argument("--cgroup-parent", type=Path,
-                     help="namespace preflight only: existing delegated cgroup-v2 directory; parent limits/controllers are never changed")
+                     help="existing delegated cgroup-v2 directory; parent limits/controllers are never changed")
+    run.add_argument("--namespace-subject", action="store_true",
+                     help="experimental supervised MCP subject sessions after green namespace probes; containment stays UNKNOWN")
     run.add_argument("--server-uid", type=int, help="privileged Linux parent only: drop the server to this nonzero UID")
     run.add_argument("--server-gid", type=int)
     args = parser.parse_args(argv)
@@ -79,6 +81,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--native conflicts with --isolation " + args.isolation)
     if args.cgroup_parent is not None and args.isolation != "namespace":
         parser.error("--cgroup-parent requires --isolation namespace")
+    if args.namespace_subject and (args.isolation != "namespace" or args.cgroup_parent is None):
+        parser.error("--namespace-subject requires --isolation namespace and --cgroup-parent")
+    if args.namespace_subject and (args.server_uid is not None or args.server_gid is not None):
+        parser.error("namespace subject UID/GID overrides are not supported at this checkpoint")
 
     run_id = str(uuid.uuid4())
     try:
@@ -97,7 +103,9 @@ def main(argv: list[str] | None = None) -> int:
         from .isolation import get_backend
         backend = get_backend(args.isolation)
         report = Runner(config, args.server_uid, args.server_gid,
-                        isolation_backend=backend, cgroup_parent=args.cgroup_parent).run()
+                        isolation_backend=backend, cgroup_parent=args.cgroup_parent,
+                        namespace_subject=args.namespace_subject,
+                        protected_paths=(*destinations, args.config.resolve())).run()
         report["run_id"] = run_id
         report["state"] = "FINISHED"
         # JSON is the authoritative commit marker for this pair of files.

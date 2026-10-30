@@ -26,7 +26,7 @@ jobs:
       - name: Install bubblewrap on the disposable CI VM
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y bubblewrap
+          sudo apt-get install -y bubblewrap strace
           bwrap --version
       - name: Prepare an explicit disposable cgroup delegation
         shell: bash
@@ -43,6 +43,14 @@ jobs:
         run: |
           sudo env PYTHONPATH=src MCP_BEHAVIOR_CGROUP_PARENT="$MCP_BEHAVIOR_CGROUP_PARENT" \
             python3 -m unittest discover -s tests -p test_supervisor.py -v
+      - name: Finite actual-subject boundary controls (containment remains UNKNOWN)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          sudo env PYTHONPATH=src MCP_BEHAVIOR_CGROUP_PARENT="$MCP_BEHAVIOR_CGROUP_PARENT" \
+            MCP_BEHAVIOR_SUBJECT_LIVE=1 MCP_BEHAVIOR_ACCEPTANCE_OUTPUT=out/acceptance \
+            python3 -m unittest discover -s tests -v 2>&1 | tee out/live-tests.log
       - name: Collect finite namespace-helper evidence without launching an MCP subject
         run: |
           sudo env PYTHONPATH=src MCP_BEHAVIOR_CGROUP_PARENT="$MCP_BEHAVIOR_CGROUP_PARENT" python3 - <<'PY'
@@ -85,6 +93,9 @@ jobs:
         if: always()
         with:
           name: namespace-helper-evidence
-          path: out/github-namespace.*
+          path: |
+            out/github-namespace.*
+            out/acceptance/*.json
+            out/live-tests.log
           if-no-files-found: ignore
           retention-days: 7

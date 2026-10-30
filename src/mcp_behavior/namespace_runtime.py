@@ -1,8 +1,8 @@
 """Candidate namespace layout and a bounded, controller-owned filesystem probe.
 
-Only the trusted probe helper may run at this checkpoint. Arbitrary subjects stay
-disabled until supervision, run-level observation and teardown are integrated.
-A successful probe is not a containment verdict or permission to launch a server.
+This module runs trusted probes only. Experimental subject sessions live in
+subject.py and require Runner's explicit policy/probe gate. A successful standalone
+probe is not a containment verdict or permission to launch a server.
 """
 from __future__ import annotations
 
@@ -284,12 +284,12 @@ def run_host_canary_probe(plan: LaunchPlan, token: str) -> ProbeResult:
 
 
 def launch_subject(plan: LaunchPlan) -> LaunchResult:
-    """Fail closed until the required run-level supervisor exists.
+    """Retain refusal for the legacy, ungated standalone launcher API.
 
     A standalone canary success must not authorize an unbounded Popen of an
     arbitrary binary. Runner integration must carry the full acceptance evidence.
     """
-    probe = ProbeResult(False, "subject launch disabled: run-level network/resource observers and cgroup teardown are not integrated")
+    probe = ProbeResult(False, "standalone subject launch disabled: use Runner's explicitly gated supervised session path")
     return LaunchResult(None, probe, "bwrap", {
         "subject_launch_supported": False,
         "requested_limits": {"memory_mib": plan.memory_mib, "cpu_seconds": plan.cpu_seconds, "max_pids": plan.max_pids},

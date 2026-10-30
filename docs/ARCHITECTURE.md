@@ -67,6 +67,23 @@ The synthetic network observer owns IPv4/IPv6 loopback TCP listeners outside the
 
 This checkpoint accepts only fixed controller-owned helper code. No configured MCP command is passed to the supervisor. Synthetic probe success does not authorize Runner or `launch_subject()`. Run-level oracle/controller protection, complete network/resource enforcement, external filesystem observation, host acceptance and actual subject transport remain open. Version 0.2.0 is unreleased.
 
+### Checkpoint 4 experimental session contract
+
+The explicit `--namespace-subject` path adds configured MCP sessions after green,
+policy-bound helper probes. Each session creates a new `CgroupScope` and uses a
+fixed bootstrap that joins and blocks. The controller checks sole membership and
+limits before releasing the bootstrap to exec bubblewrap. Attachment/release
+descriptors are closed before exec. Only fixture trees and explicit artifact
+files are mounted, alongside read-only runtime roots and a private temporary tree.
+The bounded stdio client samples aggregate usage, and session close recursively
+kills and verifies the owned cgroup before snapshot grading. Failed cleanup stops
+further subject sessions. A bounded pidfd fallback cannot erase cleanup failure.
+
+The default remains helper-only; the old standalone launch API still refuses.
+Full containment preflight is separate from experimental launch prerequisites.
+Neither successful MCP calls nor helper evidence supplies containment PASS. See
+[CHECKPOINT4.md](CHECKPOINT4.md) for acceptance criteria and remaining matrix.
+
 ## Alternatives considered
 
 | Alternative | Why not now |

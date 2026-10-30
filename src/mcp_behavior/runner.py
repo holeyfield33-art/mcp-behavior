@@ -17,10 +17,11 @@ from typing import Any
 from . import __version__
 from .config import Config, canonical, digest
 from .fixtures import Fixture, bounded_hash, build_fixture, snapshot
-from .isolation import ExecutionMode, IsolationBackend, IsolationPolicy, NativeBackend, PreflightResult
+from .isolation import ExecutionMode, IsolationBackend, IsolationPolicy, NativeBackend, NamespaceBackend, PreflightResult
 from .model import Check, ContractError, HarnessError, ServerFault, Status, UnsupportedEvidence, verdict
 from .oracle import Answer, at, decode, fixture_checks, reasoned_error, repeatable_payload
 from .transport import StdioClient, child_setup
+from .subject import SubjectSession
 
 CASES = ("normal", "missing", "file_as_root", "relative", "outside", "traversal",
          "escaping_symlink", "dangling_symlink", "internal_symlink", "directory_loop",
@@ -31,7 +32,8 @@ class Runner:
     def __init__(self, config: Config, uid: int | None = None, gid: int | None = None,
                  isolation_backend: IsolationBackend | None = None,
                  isolation_preflight: PreflightResult | None = None,
-                 cgroup_parent: Path | None = None):
+                 cgroup_parent: Path | None = None, namespace_subject: bool = False,
+                 protected_paths: tuple[Path, ...] = ()):
         if sys.platform != "linux":
             raise HarnessError("v1 requires Linux")
         if uid is not None and (type(uid) is not int or uid <= 0 or os.geteuid() != 0):
@@ -39,6 +41,7 @@ class Runner:
         if gid is not None and (uid is None or gid < 0):
             raise HarnessError("--server-gid requires --server-uid and a nonnegative GID")
         self.config = config
+        self.protected_paths = protected_paths
         self.uid, self.gid = uid, gid
         self.isolation_backend = isolation_backend if isolation_backend is not None else NativeBackend()
         self.isolation_policy = IsolationPolicy(
@@ -46,6 +49,7 @@ class Runner:
             memory_mib=config.limits.memory_mib, cpu_seconds=config.limits.cpu_seconds,
             network="inherit" if self.isolation_backend.mode == ExecutionMode.NATIVE else "deny",
             cgroup_parent=str(cgroup_parent) if cgroup_parent is not None else None,
+            namespace_subject=namespace_subject,
         )
         self.isolation_preflight = (isolation_preflight if isolation_preflight is not None
                                     else self.isolation_backend.preflight(self.isolation_policy))
@@ -60,15 +64,21 @@ class Runner:
         self.normal_correct = False
         self.recovery_status = Status.UNKNOWN
         self.suite_deadline: float | None = None
+        self.namespace_aborted = False
 
     def add(self, id: str, lane: str, status: Status, reason: str, **evidence: Any) -> None:
         self.checks.append(Check(id, lane, status, reason, evidence))
 
     def execution_allowed(self) -> bool:
-        # Trusted helper self-tests do not implement subject-run supervision.
-        # Feature presence or an injected successful probe must not start a native
-        # subprocess while the report says namespace isolation was selected.
-        return self.isolation_preflight.ok and self.isolation_backend.mode == ExecutionMode.NATIVE
+        if self.isolation_backend.mode == ExecutionMode.NATIVE:
+            return self.isolation_preflight.ok
+        return (not self.namespace_aborted and isinstance(self.isolation_backend, NamespaceBackend)
+                and self.isolation_backend.launch_ready(self.isolation_preflight, self.isolation_policy))
+
+    def subject_session(self) -> SubjectSession:
+        if self.isolation_backend.mode != ExecutionMode.NAMESPACE or not self.execution_allowed():
+            raise HarnessError("namespace subject launch prerequisites not satisfied")
+        return SubjectSession(Path(self.isolation_policy.cgroup_parent), self.config.limits, self.protected_paths)
 
     def isolation_evidence(self) -> dict[str, Any]:
         return {"mode": self.isolation_backend.mode.value,
@@ -78,7 +88,10 @@ class Runner:
                 "findings": [vars(f) for f in self.isolation_preflight.findings],
                 "observed": self.isolation_preflight.observed,
                 "reasons": self.isolation_preflight.reasons(),
-                "subject_launch_supported": self.isolation_backend.mode == ExecutionMode.NATIVE}
+                "subject_launch_supported": self.execution_allowed(),
+                "subject_launch_requested": self.isolation_policy.namespace_subject,
+                "subject_launch_aborted": self.namespace_aborted,
+                "containment_matrix_complete": False}
 
     def identity(self) -> dict[str, Any]:
         files = list(self.config.artifacts)
@@ -112,16 +125,37 @@ print(json.dumps(result))
         if fixture.name == "unreadable":
             paths.append(str(fixture.root / "unreadable.py"))
         try:
-            proc = subprocess.run([sys.executable, "-I", "-S", "-c", probe, *paths],
+            if self.isolation_backend.mode == ExecutionMode.NAMESPACE:
+                session = self.subject_session()
+                try:
+                    proc = session.start(("/usr/bin/python3", "-I", "-S", "-c", probe, *paths),
+                                         fixture.watched, fixture.cwd, self.config.artifacts,
+                                         min(time.monotonic() + 2, self.suite_deadline or float("inf")))
+                    stdout, _ = proc.communicate(timeout=2)
+                    if len(stdout) > 4096:
+                        raise HarnessError("permission probe exceeded its byte budget")
+                    session.check()
+                finally:
+                    try:
+                        session.close()
+                    finally:
+                        fixture.preconditions["namespace_permission_session"] = session.evidence
+                        if (not session.evidence.get("cleanup", {}).get("ok", False)
+                                or session.evidence.get("observer_error")):
+                            self.namespace_aborted = True
+                probe_stdout = stdout
+            else:
+                proc = subprocess.run([sys.executable, "-I", "-S", "-c", probe, *paths],
                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                   env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"},
                                   timeout=2, cwd=fixture.cwd,
                                   preexec_fn=lambda: child_setup(self.config.limits, self.uid, self.gid))
+                probe_stdout = proc.stdout
         except (OSError, subprocess.SubprocessError) as exc:
             raise HarnessError("independent permission preflight failed") from exc
         if proc.returncode != 0:
             raise HarnessError("permission preflight failed before it could test readability")
-        fixture.preconditions.update(json.loads(proc.stdout))
+        fixture.preconditions.update(json.loads(probe_stdout))
 
     def handle_answer(self, fixture: Fixture, answer: Answer) -> None:
         name = fixture.name
@@ -193,6 +227,7 @@ print(json.dumps(result))
     def execute(self, fixture: Fixture, label: str | None = None, repeat: bool = False) -> None:
         label = label or fixture.name
         client: StdioClient | None = None
+        session: SubjectSession | None = None
         evidence: dict[str, Any] = {"id": label, "input_manifest": fixture.hash_manifest(),
                                     "unsafe_entries": sorted(fixture.problems), "root": str(fixture.root)}
         try:
@@ -200,8 +235,14 @@ print(json.dumps(result))
                 raise UnsupportedEvidence("selected isolation backend is not ready to launch a subject")
             self.preflight(fixture)
             evidence["preconditions"] = dict(fixture.preconditions)
-            client = StdioClient(self.config.command, fixture.cwd, fixture.root, fixture.home,
-                                 self.config.limits, self.uid, self.gid, self.suite_deadline)
+            if self.isolation_backend.mode == ExecutionMode.NAMESPACE:
+                session = self.subject_session()
+                client = StdioClient(self.config.command, fixture.cwd, fixture.root, fixture.home,
+                                     self.config.limits, self.uid, self.gid, self.suite_deadline,
+                                     subject_session=session, workspace=fixture.watched, artifacts=self.config.artifacts)
+            else:
+                client = StdioClient(self.config.command, fixture.cwd, fixture.root, fixture.home,
+                                     self.config.limits, self.uid, self.gid, self.suite_deadline)
             client.initialize()
             client.tool(self.config.profile.tool)
             self.tool_fingerprints.add(client.tools_sha256)
@@ -246,6 +287,8 @@ print(json.dumps(result))
             if any(e.startswith("unsupported:") for e in client.events):
                 self.add(label + ".client_capabilities", "readiness", Status.UNKNOWN,
                          "server requested a capability outside the v1 test client", events=client.events)
+            if session is not None:
+                session.check()
         except ServerFault as exc:
             code = "bounded_output" if exc.code in ("frame_limit", "result_limit", "session_limit") else "bounded_completion" if exc.code == "timeout" else "server_behavior"
             self.add(label + "." + code, "readiness", Status.FAIL,
@@ -262,13 +305,24 @@ print(json.dumps(result))
             self.add(label + ".harness_evidence", "readiness", Status.UNKNOWN,
                      "harness could not collect evidence; this is not a server pass", kind=type(exc).__name__)
         finally:
+            evidence.setdefault("preconditions", dict(fixture.preconditions))
             if client is not None:
                 evidence["transport"] = client.metadata()
                 try:
                     client.close()
-                except (OSError, subprocess.SubprocessError) as exc:
+                except (OSError, subprocess.SubprocessError, HarnessError) as exc:
                     self.errors.append({"case": label, "kind": "cleanup", "message": str(exc)[:256]})
                     self.add(label + ".cleanup", "security", Status.UNKNOWN, "server cleanup could not be confirmed")
+            if session is not None:
+                evidence["subject_session"] = session.evidence
+                if (not session.evidence.get("cleanup", {}).get("ok", False)
+                        or session.evidence.get("observer_error")):
+                    self.namespace_aborted = True
+                if session.evidence.get("final_resource_error"):
+                    self.add(label + ".resource_evidence", "security",
+                             Status.FAIL if session.evidence.get("final_resource_intervention") else Status.UNKNOWN,
+                             "final aggregate resource evidence did not satisfy the budget",
+                             detail=session.evidence["final_resource_error"])
             try:
                 after = snapshot(fixture.watched, fixture.read_fds)
                 changed = sorted(k for k in set(after) | set(fixture.before) if after.get(k) != fixture.before.get(k))
@@ -296,6 +350,10 @@ print(json.dumps(result))
             parent = Path(temporary)
             normal: Fixture | None = None
             for name in CASES:
+                if self.namespace_aborted:
+                    self.add(name + ".isolation_aborted", "readiness", Status.UNKNOWN,
+                             "earlier namespace teardown or observation was unverified; no further subject sessions allowed")
+                    continue
                 if time.monotonic() >= self.suite_deadline:
                     self.add(name + ".suite_budget", "readiness", Status.UNKNOWN, "suite budget exhausted; scenario was not run")
                     continue
@@ -307,7 +365,7 @@ print(json.dumps(result))
                 except (OSError, HarnessError) as exc:
                     self.errors.append({"case": name, "kind": type(exc).__name__, "message": str(exc)[:512]})
                     self.add(name + ".setup", "readiness", Status.UNKNOWN, "fixture setup failed; scenario was not tested", kind=type(exc).__name__)
-            if normal is not None and time.monotonic() < self.suite_deadline:
+            if normal is not None and not self.namespace_aborted and time.monotonic() < self.suite_deadline:
                 self.execute(normal, label="normal_fresh")
 
     def run(self) -> dict[str, Any]:
@@ -371,7 +429,7 @@ print(json.dumps(result))
                 "case_count": len(self.cases), "checks": [c.to_dict() for c in self.checks],
                 "cases": self.cases, "harness_errors": self.errors,
                 "limitations": ["Native mode cannot certify containment or absence of unobserved host effects.",
-                                "Namespace mode runs trusted preflight helpers only; MCP subject launch remains disabled.",
+                                "Experimental namespace subject sessions require explicit opt-in and green helper probes; the full containment matrix remains incomplete.",
                                 "Synthetic filesystem, TCP endpoint and cgroup helper evidence does not prove actual subject containment.",
                                 "Snapshots do not prove absence of transient writes or reads that leave no observable evidence.",
                                 "Artifact identity covers explicit files, not the installed dependency closure.",
