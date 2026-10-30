@@ -9,7 +9,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from mcp_behavior.cli import main
-from mcp_behavior.config import Config
+from mcp_behavior.config import Config, digest
+from mcp_behavior.namespace_runtime import ProbeResult
 from mcp_behavior.fixtures import build_fixture
 from mcp_behavior.model import HarnessError
 from mcp_behavior.runner import Runner
@@ -27,6 +28,65 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class IsolationTests(unittest.TestCase):
+    def test_successful_synthetic_observers_cannot_enable_subject_launch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp) / "delegated"
+            parent.mkdir()
+            (parent / "cgroup.controllers").write_text("cpu memory pids")
+            output = Path(tmp) / "report.json"
+            with patch("mcp_behavior.isolation.tool_preflight", return_value=ProbeResult(True, "candidate")), \
+                 patch("mcp_behavior.isolation.run_host_canary_probe", return_value=ProbeResult(True, "host path control")), \
+                 patch("mcp_behavior.isolation.run_network_probe", return_value=ProbeResult(True, "TCP controls")), \
+                 patch("mcp_behavior.isolation.run_cgroup_probe", return_value=ProbeResult(True, "detached helper control")) as supervisor, \
+                 patch("mcp_behavior.runner.StdioClient") as client, \
+                 patch("mcp_behavior.runner.build_fixture") as fixtures, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                code = main(["run", "--config", str(ROOT / "examples/reference.json"),
+                             "--output", str(output), "--isolation", "namespace", "--cgroup-parent", str(parent)])
+            report = json.loads(output.read_text())
+            self.assertEqual(supervisor.call_args.args[0], parent)
+        client.assert_not_called()
+        fixtures.assert_not_called()
+        self.assertEqual(code, 2)
+        self.assertEqual(report["case_count"], 0)
+        self.assertEqual(report["verdict"], "INCOMPLETE")
+        self.assertEqual(report["isolation"]["requested_policy"]["cgroup_parent"], str(parent))
+        self.assertEqual(report["isolation"]["policy_sha256"], digest(report["isolation"]["requested_policy"]))
+        for name in ("host_path_probe", "network_endpoint_probe", "cgroup_supervisor_probe"):
+            self.assertTrue(report["isolation"]["observed"][name]["ok"])
+        self.assertFalse(report["isolation"]["subject_launch_supported"])
+        self.assertFalse(report["isolation"]["preflight_ok"])
+        self.assertEqual(next(c["status"] for c in report["checks"] if c["id"] == "execution_containment"), "UNKNOWN")
+
+    def test_ordinary_directory_cgroup_cannot_replace_stale_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp) / "fake"
+            parent.mkdir()
+            (parent / "cgroup.controllers").write_text("cpu memory pids")
+            (parent / "cgroup.subtree_control").write_text("cpu memory pids")
+            output = Path(tmp) / "report.json"
+            output.write_text('{"verdict":"PASS","run_id":"stale"}')
+            with patch("mcp_behavior.isolation.tool_preflight", return_value=ProbeResult(False, "no bwrap")), \
+                 patch("mcp_behavior.runner.StdioClient") as client, \
+                 contextlib.redirect_stdout(io.StringIO()) as stdout:
+                code = main(["run", "--config", str(ROOT / "examples/reference.json"),
+                             "--output", str(output), "--isolation", "namespace", "--cgroup-parent", str(parent)])
+            report = json.loads(output.read_text())
+            readable = output.with_suffix(".md").read_text()
+        client.assert_not_called()
+        self.assertEqual(code, 2)
+        self.assertEqual(report["state"], "FINISHED")
+        self.assertEqual(report["run_id"], json.loads(stdout.getvalue())["run_id"])
+        self.assertNotEqual(report["run_id"], "stale")
+        self.assertEqual(report["verdict"], "INCOMPLETE")
+        self.assertEqual(report["case_count"], 0)
+        self.assertTrue(report["isolation"]["observed"]["cgroup_v2"])
+        probe = report["isolation"]["observed"]["cgroup_supervisor_probe"]
+        self.assertFalse(probe["ok"])
+        self.assertIn("genuine cgroup-v2", probe["detail"])
+        self.assertIn("network_endpoint_probe", readable)
+        self.assertIn("cgroup_supervisor_probe", readable)
+
     def test_native_preflight_ok_on_linux(self) -> None:
         backend = NativeBackend()
         result = backend.preflight(IsolationPolicy(mode=ExecutionMode.NATIVE))

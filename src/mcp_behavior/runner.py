@@ -30,7 +30,8 @@ CASES = ("normal", "missing", "file_as_root", "relative", "outside", "traversal"
 class Runner:
     def __init__(self, config: Config, uid: int | None = None, gid: int | None = None,
                  isolation_backend: IsolationBackend | None = None,
-                 isolation_preflight: PreflightResult | None = None):
+                 isolation_preflight: PreflightResult | None = None,
+                 cgroup_parent: Path | None = None):
         if sys.platform != "linux":
             raise HarnessError("v1 requires Linux")
         if uid is not None and (type(uid) is not int or uid <= 0 or os.geteuid() != 0):
@@ -44,6 +45,7 @@ class Runner:
             mode=self.isolation_backend.mode, server_uid=uid, server_gid=gid,
             memory_mib=config.limits.memory_mib, cpu_seconds=config.limits.cpu_seconds,
             network="inherit" if self.isolation_backend.mode == ExecutionMode.NATIVE else "deny",
+            cgroup_parent=str(cgroup_parent) if cgroup_parent is not None else None,
         )
         self.isolation_preflight = (isolation_preflight if isolation_preflight is not None
                                     else self.isolation_backend.preflight(self.isolation_policy))
@@ -63,7 +65,7 @@ class Runner:
         self.checks.append(Check(id, lane, status, reason, evidence))
 
     def execution_allowed(self) -> bool:
-        # Checkpoint 1 implements an interface and probes, not a namespace launcher.
+        # Trusted helper self-tests do not implement subject-run supervision.
         # Feature presence or an injected successful probe must not start a native
         # subprocess while the report says namespace isolation was selected.
         return self.isolation_preflight.ok and self.isolation_backend.mode == ExecutionMode.NATIVE
@@ -72,6 +74,7 @@ class Runner:
         return {"mode": self.isolation_backend.mode.value,
                 "preflight_ok": self.isolation_preflight.ok,
                 "requested_policy": vars(self.isolation_policy),
+                "policy_sha256": digest(vars(self.isolation_policy)),
                 "findings": [vars(f) for f in self.isolation_preflight.findings],
                 "observed": self.isolation_preflight.observed,
                 "reasons": self.isolation_preflight.reasons(),
@@ -368,6 +371,8 @@ print(json.dumps(result))
                 "case_count": len(self.cases), "checks": [c.to_dict() for c in self.checks],
                 "cases": self.cases, "harness_errors": self.errors,
                 "limitations": ["Native mode cannot certify containment or absence of unobserved host effects.",
+                                "Namespace mode runs trusted preflight helpers only; MCP subject launch remains disabled.",
+                                "Synthetic filesystem, TCP endpoint and cgroup helper evidence does not prove actual subject containment.",
                                 "Snapshots do not prove absence of transient writes or reads that leave no observable evidence.",
                                 "Artifact identity covers explicit files, not the installed dependency closure.",
                                 "Behavioral field mappings and expected capabilities are reviewer-owned assertions; review their digest.",

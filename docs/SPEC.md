@@ -92,6 +92,18 @@ The CLI writes an INCOMPLETE/RUNNING marker before launching and commits FINISHE
 
 This spec closes policy ambiguity by either implementing a check or explicitly withholding a verdict. It does not assert that every engineering risk is solved. Host isolation, syscall read/write observation, cgroup-wide resource/descendant enforcement, race testing, full dependency attestation, concurrent/multi-tenant execution and real-model behavior are open gates. Native assessments must not be published as broad security certifications.
 
+## 9. Pre-release isolation implementation status — 2026-10-30
+
+The behavioral profile and specification version remain 1.0.0. Development checkpoint 3 adds trusted infrastructure observations without changing fixture scoring or claiming a 0.2.0 release.
+
+`--isolation native` (or `--native`) runs reviewed MCP subjects with required containment UNKNOWN. `--isolation namespace` runs fixed controller-owned preflight helpers only and refuses the configured subject. `--cgroup-parent` optionally supplies an existing explicitly delegated canonical cgroup-v2 path for a fixed detached-helper self-test; it is invalid with native mode. Requested policy and its digest are distinct from observed enforcement.
+
+Infrastructure probes require their own valid fixtures, typed complete evidence, run nonces, bounds and positive/negative controls. A probe timeout, output cutoff, malformed evidence, missing prerequisite or observer/cleanup fault is failed infrastructure evidence, not a demonstrated MCP server defect. All synthetic probe successes still leave required run-level containment UNKNOWN and zero subject cases at this checkpoint.
+
+The TCP observer checks only controlled IPv4/IPv6 loopback endpoints and requires externally received host positive controls. Traffic received from the isolated helper disproves candidate denial regardless of helper text. Absence of traffic alone cannot supply a pass. The cgroup self-test verifies genuine filesystem type, existing delegation, new-leaf limit readback, membership before release, a detached trusted child and recursive kill/empty/removal. CPU bandwidth is not a lifetime CPU budget; cumulative usage is separately sampled. A full resource-stress test and actual subject integration remain required.
+
+A skipped host integration test is missing acceptance evidence. A fake control-file directory, feature-file presence, launcher flag or unverified helper success cannot satisfy execution_containment. Other protocols/routes, full forbidden-read and transient-write/race coverage, controller/oracle protection and dependency closure remain open under section 8.
+
 ## References reviewed
 
 - [Official MCP conformance framework](https://github.com/modelcontextprotocol/conformance): separate protocol checks, revision-specific requirements and harness-error reporting.
@@ -101,3 +113,5 @@ This spec closes policy ambiguity by either implementing a check or explicitly w
 - [MCPSecBench v3](https://arxiv.org/abs/2508.13220v3): separate security benchmark/research scope.
 
 The two additional overview/directory URLs supplied with the vision were not retrievable during this review and were not used as technical authorities.
+
+Checkpoint 3 is identified in package metadata and reports as `0.2.0.dev3`; this development version does not grant a stable 0.2.0 release or containment verdict.

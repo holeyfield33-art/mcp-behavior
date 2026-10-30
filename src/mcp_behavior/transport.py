@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import __version__
 from .config import Limits, canonical, digest, strict_json
 from .model import HarnessError, ServerFault, UnsupportedEvidence
 
@@ -240,7 +241,7 @@ class StdioClient:
     def initialize(self) -> None:
         frame = self.request("initialize", {"protocolVersion": VERSIONS[0],
                               "capabilities": {"roots": {"listChanged": False}},
-                              "clientInfo": {"name": "mcp-behavior", "version": "0.1.0"}})
+                              "clientInfo": {"name": "mcp-behavior", "version": __version__}})
         result = frame.message.get("result")
         if result is None:
             raise self._fault("initialization", "server refused initialization")

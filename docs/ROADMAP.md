@@ -1,6 +1,6 @@
 # Version 0.2.0 — isolated-runner acceptance plan
 
-Status: checkpoint 1 merged; checkpoint 2 partial and subject launch disabled. Review date: 2026-10-30.
+Status: checkpoints 2 and 3 partial; trusted-helper implementation present, live acceptance and subject launch still blocked. Review date: 2026-10-30.
 
 One development slice: run the existing stdio inventory profile in an independently validated Linux isolation backend. Keep the v0.1.0 profile and reference controls working. Do not add HTTP, authentication, tool families, a model judge or commercial features in this slice.
 
@@ -59,12 +59,20 @@ The fixed Sentinel-Zero retest remains a separate first-proof gate. Record the a
 | Date | Checkpoint | Evidence and remaining gates |
 |---|---|---|
 | 2026-10-30 | 1, merged PR #1 | Interface, fail-closed preflight, CLI and Runner wiring; 48 tests. Native containment remains UNKNOWN. |
-| 2026-10-30 | 2, partial | Candidate bubblewrap layout and bounded trusted filesystem helper wired into NamespaceBackend preflight. Known private host secrets are verified before probing; malformed, incomplete, wrong-run or unexpected-I/O evidence fails closed. Probe and candidate subject layout use the same absolute workspace mount. |
+| 2026-10-30 | 2, partial, merged PR #2 | Candidate bubblewrap layout and bounded trusted filesystem helper wired into NamespaceBackend preflight. Known private host secrets are verified before probing; malformed, incomplete, wrong-run or unexpected-I/O evidence fails closed. Probe and candidate subject layout use the same absolute workspace mount. |
+| 2026-10-30 | 3, partial | IPv4/IPv6 loopback TCP observer with host positive controls; explicitly delegated cgroup-v2 helper supervisor, readback limits, join-before-release gate and detached-child cleanup observation; policy digest and `--cgroup-parent`. Live delegated-host proof pending. |
 
-This checkpoint may run only controller-owned probe code. `launch_subject()` refuses all subject commands, and Runner retains its independent namespace launch gate. Tool discovery and synthetic probe success do not authorize a server launch or a containment PASS. No cgroup limits are claimed as enforced.
+Current implementation may run only controller-owned probe code. `launch_subject()` refuses all subject commands, and Runner retains its independent namespace launch gate. Tool discovery and synthetic probe success do not authorize a server launch or a containment PASS. No cgroup limits are claimed as enforced on MCP subjects; live helper acceptance remains pending.
 
-The helper receives a minimal environment and no inherited controller descriptors beyond stdio. Output is bounded at 16 KiB combined stdout/stderr before decoding, with a five-second deadline. JSON must contain every typed access result and the current probe nonce. Preexisting fixture destinations are never overwritten. Missing, changed, empty, symlinked or exposed secrets cannot satisfy the fixture precondition. A protected path inside a candidate mount is rejected rather than earning credit from path remapping.
+Filesystem/TCP helpers receive a minimal environment and no inherited controller descriptors beyond stdio; their combined output is bounded at 16 KiB before decoding, with a five-second deadline per helper. The cgroup bootstrap receives only narrow join/release descriptors and closes them before its workload. Its output is bounded at 4 KiB, unexpected stderr fails, and its three-second work deadline is separate from the two-second teardown deadline. JSON must contain every typed access result and the current probe nonce. Preexisting fixture destinations are never overwritten. Missing, changed, empty, symlinked or exposed secrets cannot satisfy the fixture precondition. A protected path inside a candidate mount is rejected rather than earning credit from path remapping.
 
 The probe only checks named synthetic paths in its own namespace. It does not establish arbitrary forbidden-read coverage, transient-write coverage, race resistance or protection in a later server namespace. The candidate runtime still exposes read-only host runtime trees; its dependency closure is not sealed. All of sections 2-4 remain acceptance gates.
 
-Still open: supervised Runner/transport integration, run-level oracle/controller protection, externally observed network denial, cgroup aggregate limits and descendant teardown, the remaining external observer matrix, and a live positive/negative containment proof on a supported host. A missing or blocked bubblewrap capability remains explicit INCOMPLETE evidence. The fixed Sentinel-Zero acceptance retest remains separate.
+Still open: a live delegated-host acceptance run; supervised Runner/transport integration; run-level oracle/controller protection, complete network denial, aggregate limits and descendant teardown; resource stress controls; and the remaining external observer matrix. The TCP observer covers only two named loopback endpoints. The cgroup helper self-test is implemented but has not been verified against a live delegated kernel here. A missing or blocked bubblewrap capability remains explicit INCOMPLETE evidence. The fixed Sentinel-Zero acceptance retest remains separate.
+
+
+Checkpoint 3 control contract: the delegated parent must be canonical, genuinely cgroup v2, and already expose active cpu/memory/pids controllers and cgroup.kill. Never auto-enable or relax parent controls. Configure a new leaf with memory.max, memory.swap.max=0, pids.max, cpu.max, memory.oom.group=1 and cgroup.max.descendants=0, verify readback, then independently verify helper membership before release. Sample aggregate cpu.stat against the lifetime budget; do not confuse CPU bandwidth with total CPU seconds. After normal or abnormal work, cgroup.kill must be followed by recursive populated=0, empty membership and removal. Failed cleanup remains missing evidence even if fallback helper termination succeeds.
+
+The opt-in live cgroup test uses MCP_BEHAVIOR_CGROUP_PARENT; it is explicitly skipped without a delegated host. Contract tests with ordinary files do not replace that acceptance. All server launch gates and all rows of the full acceptance matrix remain required.
+
+Checkpoint 3 is identified in package metadata and reports as `0.2.0.dev3`; this development version does not grant a stable 0.2.0 release or containment verdict.

@@ -63,8 +63,10 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--native", action="store_true",
                      help="allow host subprocess execution (isolation=native); containment remains UNKNOWN")
     run.add_argument("--isolation", choices=("native", "namespace"), default=None,
-                     help="execution backend: native (dev) or namespace (v0.2.0 target). "
+                     help="native development execution or namespace trusted-helper preflight (subject launch disabled). "
                           "No silent fallback between modes.")
+    run.add_argument("--cgroup-parent", type=Path,
+                     help="namespace preflight only: existing delegated cgroup-v2 directory; parent limits/controllers are never changed")
     run.add_argument("--server-uid", type=int, help="privileged Linux parent only: drop the server to this nonzero UID")
     run.add_argument("--server-gid", type=int)
     args = parser.parse_args(argv)
@@ -75,6 +77,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("choose an execution backend: --native (containment UNKNOWN) or --isolation namespace")
     if args.native and args.isolation != "native":
         parser.error("--native conflicts with --isolation " + args.isolation)
+    if args.cgroup_parent is not None and args.isolation != "namespace":
+        parser.error("--cgroup-parent requires --isolation namespace")
 
     run_id = str(uuid.uuid4())
     try:
@@ -93,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
         from .isolation import get_backend
         backend = get_backend(args.isolation)
         report = Runner(config, args.server_uid, args.server_gid,
-                        isolation_backend=backend).run()
+                        isolation_backend=backend, cgroup_parent=args.cgroup_parent).run()
         report["run_id"] = run_id
         report["state"] = "FINISHED"
         # JSON is the authoritative commit marker for this pair of files.

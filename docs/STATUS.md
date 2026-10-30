@@ -1,60 +1,51 @@
-# Implementation and first proof
+# Implementation and proof status
 
-2026-10-29. Version 0.1.0. Standalone local Git repository: `mcp-behavior`. No remote repository has been created by this task.
+Updated 2026-10-30. Repository: https://github.com/holeyfield33-art/mcp-behavior. Development package version: **0.2.0.dev3**. Development target: **0.2.0**, not released.
 
-Decision: **GO for the local behavioral prototype. NO-GO for broad security certification or execution of arbitrary hostile servers on the host.**
+Decision: **GO for reviewed local behavioral runs and trusted-helper development; NO-GO for arbitrary hostile MCP subjects, broad security certification or a containment PASS.**
 
-## Implemented and verified
+## Current checkpoints
 
-- A stdlib-only Python/Linux CLI and bounded stdio MCP client.
-- Reviewer-owned JSON profiles and strict response-field mappings.
-- Independent randomized fixtures, content hashes, coverage/completion checks, canaries and filesystem snapshots.
-- Missing/bad/relative/outside path cases; escaping/internal/dangling symlinks; directory loop; FIFO; verified mode-000 failure; mixed-language and large repositories.
-- Same/fresh-session repeatability with narrow declared timestamp normalization.
-- Same-session scripted repair, separate from real-model behavior.
-- Separate readiness/security lanes; PASS/FAIL/UNKNOWN/N/A; no weighted score or missing-evidence pass.
-- Request, case and suite deadlines; pre-decode byte caps; message/cursor/stderr bounds; process-group cleanup and minimal environment.
-- External execution-identity, capability, permission and canary-readability probes.
-- JSON/Markdown reports with run IDs, atomic completion markers, exact profile/config/explicit artifact hashes and fail-closed exit codes.
+| Checkpoint | Implemented | Evidence / remaining gate |
+|---|---|---|
+| 1 — interface and fail-closed preflight | Merged PR #1; backend selection, full Runner, fresh reports | 48-test checkpoint baseline; namespace zero subject launches, native containment UNKNOWN |
+| 2 — candidate namespace layout | Merged PR #2; bounded trusted host-path helper, private fixtures, strict nonce/schema validation | 76-test checkpoint baseline; actual subject launch intentionally disabled |
+| 3 — supervision and network observations | Controller-owned IPv4/IPv6 TCP listeners, required host controls, cgroup-v2 helper supervision, `--cgroup-parent`, policy digest and regression cases | Implemented for trusted helpers; positive live cgroup/namespace acceptance is pending on a capable host |
+| Run-level containment | Not integrated | Actual MCP subject supervision, protected oracle/controller storage, complete network policy and descendant teardown remain required |
+| External read/write/race coverage | Not implemented | Quiet canaries and final snapshots remain insufficient |
+| Fixed Sentinel-Zero acceptance | Pending | Reference control cannot substitute for a fixed real-subject retest |
 
-Validation: **38 tests passed**. Tests drive independent defective server processes as well as the oracle and reporting failure paths. The wheel built successfully; its Python sources exactly matched the tested sources. Installed-wheel CLI runs from `/tmp` produced both final proof reports, without a source-tree import path. Both full runs completed 14 cases and recorded zero harness errors.
+Checkpoint 3 validation: **109 tests discovered, 108 passed, one live cgroup integration test skipped** because no delegated cgroup path was supplied. Ordinary-file control models test contracts and failure handling; they are not kernel containment proof. Installed-wheel checks retain native readiness PASS/containment UNKNOWN and namespace zero subject cases, reject fake cgroup directories and verify the policy digest. A fresh-checkout run is required before merge.
 
-## Live first subject
+## What the new evidence means
 
-External subject: Sentinel-Zero at reviewer-declared Git revision `303267e4786735b068ed544936480b2368194b01`. The report separately records the server's own `0.1.0` handshake version and hashes explicit source files and the executable. It does not present that string as an artifact attestation or claim a sealed dependency closure.
+Namespace preflight may start only fixed controller-owned helpers. It never starts the configured MCP command, even if all synthetic probes succeed. `launch_subject()` and Runner each retain their launch refusal. Required run-level gates remain incomplete; the resulting report is FINISHED/INCOMPLETE with zero subject cases and containment UNKNOWN.
 
-| Acceptance case | Observed result |
+The filesystem helper validates known nonempty private secrets before testing the candidate view. The network helper requires positive controls at both controller-owned IPv4 and IPv6 TCP endpoints and uses external receipts to catch leaked traffic, including a helper that lies about its connection outcome. It does not grade UDP, arbitrary routes, Unix sockets or every possible egress path.
+
+The cgroup self-test requires an explicitly delegated genuine cgroup-v2 directory. It sets and reads back limits in a fresh owned leaf, verifies bootstrap membership before release, observes a detached helper child, and uses `cgroup.kill` plus recursive `populated=0`, empty membership and removal as cleanup evidence. CPU bandwidth and sampled total CPU usage are distinct controls. It never changes parent limits or enables parent controllers. Resource stress acceptance and actual subject integration remain open.
+
+On this development host, real host TCP positive controls succeed; bubblewrap 0.12.0 fails the candidate network-namespace operation with NETLINK_ROUTE `Operation not permitted`; no cgroup filesystem is exposed. Missing delegation and fake ordinary-file cgroup directories fail closed. These observations do not establish a positive containment proof.
+
+## Historical v0.1.0 first proof — 2026-10-29
+
+The original 38-test prototype and installed-wheel proof remain immutable under `proof/`. The repository was fully restored and then checkpoints 1 and 2 were merged on 2026-10-30; archived reports describe their original environment and commits.
+
+External subject: Sentinel-Zero at reviewer-declared revision `303267e4786735b068ed544936480b2368194b01`. Its handshake version is server-reported, not a sealed artifact attestation.
+
+| Behavioral gate | Historical observed result |
 |---|---|
-| Bad input must carry a reason | FAIL: `Error executing tool analyze_repository` |
-| Mixed-language inputs must be accounted for | FAIL: two planted JavaScript files absent from the processed-file evidence |
-| Large result must fit the configured budget or explicitly refuse | FAIL: harness stopped the frame at 278,528 observed bytes, beyond the 262,144-byte frame ceiling; caller tool-result budget was 65,536 bytes |
-| Relative path must follow the profile contract | FAIL: accepted relative input and disclosed the decoy server-CWD canary |
-| Repeated frozen input beyond allowed timestamps | PASS after explicitly declaring `/plans/*/generated_at` as the only varying timestamp path |
-| Completion truth | UNKNOWN: no completion flag mapped; the harness does not infer one |
-| Scanner semantic correctness | UNKNOWN: no finding-level/content oracle; processed-file lists alone are insufficient |
+| Bad input needs a reason | FAIL: `Error executing tool analyze_repository` |
+| Mixed-language inputs accounted for | FAIL: two planted JavaScript files absent from processed-file evidence |
+| Large result bounded or explicitly refused | FAIL: frame stopped at 278,528 observed bytes versus 262,144 frame ceiling; tool-result budget 65,536 bytes |
+| Relative paths follow profile contract | FAIL: relative input accepted and server-CWD decoy canary disclosed |
+| Repeatability | PASS after the explicit `/plans/*/generated_at` normalization |
+| Completion / scanner finding correctness | UNKNOWN: missing completion mapping and finding-level oracle |
 
-Readiness FAIL; security FAIL; overall FAIL. Outside-root behavior also failed this profile's explicit root restriction. These are results against this named behavioral contract, not claims that MCP roots themselves are a normative OS access-control mechanism.
+Historical real-subject readiness/security/overall: FAIL. The independent correct reference passed readiness and remained security/overall INCOMPLETE in native mode. Four deliberately defective controls reproduced the four behavioral failures. A fixed real Sentinel-Zero revision has not been retested here.
 
-The original roughly 196k-token observation was not adopted as a new measurement. This proof measures wire bytes and records the interception as FAIL.
+## Evidence and next action
 
-## Controls and the incomplete gate
+Archived evidence: `proof/summary.json`, `proof/reference.{json,md}`, `proof/sentinel-zero.{json,md}`, `proof/negative-controls.json`, logs and explicit source hashes. Archived configurations contain machine-specific launch paths and must be reviewed before reuse.
 
-The independent reference inventory implementation passed readiness. It correctly reported failed work, refused unsupported paths/entries with reasons, preserved watched files, returned correct hashes, and explicitly refused the oversized result. Security and overall remained INCOMPLETE because native execution containment is unproven.
-
-Four separate injected controls reproduced generic errors, silent mixed-language omissions, oversized output and CWD-relative path resolution. All four were detected. Additional regression tests cover lies about completion, false hashes/counts, contradictory results, silent truncation, duplicate paths, writes, instability, framing/ID/JSON faults, flooding, cursor loops, timeout/deadline handling, unsupported features, broken setup/observation and stale PASS reports.
-
-This establishes the failing-subject and honest-INCOMPLETE parts of the first proof, plus a correct implementation as a harness control. **A fixed Sentinel-Zero version has not been implemented or retested here.** The reference implementation is not substituted for that acceptance gate.
-
-## Next required work
-
-1. Implement and externally validate isolated execution: protected oracle/report storage, host/network boundaries, process/cgroup limits and complete descendant teardown.
-2. Add external read/write observation and synchronized race cases before claiming absence of unauthorized reads or transient effects.
-3. Retest a fixed real subject against the same four behavioral gates. Add independently reviewed finding-level fixtures before claiming scanner accuracy.
-
-HTTP, authentication, additional tool types, real-model evaluations and commercial features remain outside this version.
-
-## Evidence
-
-`proof/summary.json` provides the compact machine-readable result. `proof/reference.{json,md}` and `proof/sentinel-zero.{json,md}` contain the final installed-wheel assessments. `proof/sentinel-zero-config.json` records the exact local launch/profile configuration and must be edited for a different machine. `proof/negative-controls.json`, `proof/tests.log`, build/install logs and `proof/source-sha256.json` preserve the validation record.
-
-The downloadable bundle includes the source tree, built wheel, all proof files, a Git bundle preserving the independent repository, and SHA256SUMS. Native execution, observational limits and incomplete dependency identity remain visible in the reports.
+Next: run the helper integration on a capable explicitly delegated Linux host, preserve its artifact/config/policy identities and negative controls, then integrate supervised subject transport without waiving the acceptance matrix in [ROADMAP.md](ROADMAP.md). HTTP/auth, new profile families, real-model scoring and commercial features remain outside this slice.
