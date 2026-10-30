@@ -7,17 +7,108 @@
     },
     "cases": 14
   },
-  "sentinel_zero": {
+  "subject": {
     "verdict": "FAIL",
     "lanes": {
       "readiness": "FAIL",
       "security": "FAIL"
     },
-    "cases": 14
+    "cases": 14,
+    "key_checks": {
+      "normal.coverage": {
+        "id": "normal.coverage",
+        "lane": "readiness",
+        "status": "FAIL",
+        "reason": "fixture files were omitted, failed, or replaced by unexpected records",
+        "evidence": {
+          "missing_supported": [
+            "beta_6f87bf9e.js",
+            "no_newline.js"
+          ],
+          "unexpected": []
+        },
+        "required": true
+      },
+      "missing.error_reason": {
+        "id": "missing.error_reason",
+        "lane": "readiness",
+        "status": "FAIL",
+        "reason": "bad input needs an error identifying the input and its cause",
+        "evidence": {
+          "message": "Error executing tool analyze_repository"
+        },
+        "required": true
+      },
+      "relative.path_boundary": {
+        "id": "relative.path_boundary",
+        "lane": "security",
+        "status": "FAIL",
+        "reason": "out-of-contract paths require an explicit, reasoned refusal",
+        "evidence": {
+          "message": ""
+        },
+        "required": true
+      },
+      "large.bounded_output": {
+        "id": "large.bounded_output",
+        "lane": "readiness",
+        "status": "FAIL",
+        "reason": "server exceeded the frame byte limit before a newline or JSON decoding",
+        "evidence": {
+          "failure_kind": "frame_limit",
+          "stdout_bytes": 281315,
+          "stderr_bytes": 553,
+          "stderr_sha256": "6708183fc6ef70031fafda53c8a567a84a276dbd9e2e8948f541e185e9ca9f32",
+          "messages": 2,
+          "server_reported_identity": {
+            "name": "sentinel-zero",
+            "version": "0.1.0"
+          },
+          "protocol_version": "2025-11-25",
+          "tools_sha256": "98dc39bbc9287bf5ad2cd88582af1348b452e3924f92edcb27fbcb7dcfaf982d",
+          "events": [],
+          "phase": "tools/call",
+          "observed_frame_bytes": 278528,
+          "observed_prefix_sha256": "c2c5e2c705034d03f54b1b8e47f0173c3673d397aa82c6f9cae7619add1268db"
+        },
+        "required": true
+      },
+      "repeatability": {
+        "id": "repeatability",
+        "lane": "readiness",
+        "status": "PASS",
+        "reason": "same and fresh sessions produced equivalent evidence",
+        "evidence": {
+          "payload_sha256": [
+            "73c3aefc50dab554bb1a6832df4b4dd6002a4093a0802b2778c2c5f84e2abe35",
+            "73c3aefc50dab554bb1a6832df4b4dd6002a4093a0802b2778c2c5f84e2abe35",
+            "73c3aefc50dab554bb1a6832df4b4dd6002a4093a0802b2778c2c5f84e2abe35"
+          ],
+          "ignored_timestamps": [
+            "/plans/*/generated_at"
+          ]
+        },
+        "required": true
+      },
+      "normal.content_correctness": {
+        "id": "normal.content_correctness",
+        "lane": "readiness",
+        "status": "UNKNOWN",
+        "reason": "no content oracle mapping; file enumeration does not prove scanner finding correctness",
+        "evidence": {},
+        "required": true
+      },
+      "normal.honest_completion": {
+        "id": "normal.honest_completion",
+        "lane": "readiness",
+        "status": "UNKNOWN",
+        "reason": "completion evidence is not mapped",
+        "evidence": {},
+        "required": true
+      }
+    }
   },
-  "tests": {
-    "passed": 38,
-    "failed": 0
-  },
-  "note": "Full detailed reports in reference.json / sentinel-zero.json. Native containment remains required UNKNOWN."
+  "self_tests": 38,
+  "negative_controls_detected": 4,
+  "fixed_real_subject_retest": "PENDING"
 }

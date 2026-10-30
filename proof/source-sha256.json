@@ -1,12 +1,17 @@
 {
   "examples/reference.json": "c4169d302a7729eac0c3713261a6fd8b3cb01bb4d235846e3b55f9f7b9066849",
   "examples/reference_server.py": "ab78139ec7ce9628cca9438db30ace50ae56defa8999e65da2c6daac36e3c7e0",
-  "src/mcp_behavior/__init__.py": "placeholder-see-local",
-  "src/mcp_behavior/cli.py": "placeholder-see-local",
-  "src/mcp_behavior/config.py": "placeholder-see-local",
-  "src/mcp_behavior/fixtures.py": "placeholder-see-local",
-  "src/mcp_behavior/model.py": "placeholder-see-local",
-  "src/mcp_behavior/oracle.py": "placeholder-see-local",
-  "src/mcp_behavior/runner.py": "placeholder-see-local",
-  "src/mcp_behavior/transport.py": "placeholder-see-local"
+  "pyproject.toml": "784d82e4620a6b218eb1de8549431d7cc245e33546a4f454ebc1b4ba3779bba5",
+  "src/mcp_behavior/__init__.py": "aa6b384ec58b67c3d41f5e2921adfc4b2aee440e6461d63625ab7992119f17a6",
+  "src/mcp_behavior/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+  "src/mcp_behavior/cli.py": "c5b8ce8f05e02e3c8c384d51fe395b6b0d232fbde4ab3b896d348cd02c3d3eeb",
+  "src/mcp_behavior/config.py": "709fbc3c1ffba960a0f8fb4dd16b01273fd2599f1b49bf9c5ca0db930c17b199",
+  "src/mcp_behavior/fixtures.py": "6f3999223afc38950f7bfda7c25a6cbdde1aa8c6c9b10081b256d9f07778d0dc",
+  "src/mcp_behavior/model.py": "b990f614126f8b6c8f75e8f920e155feb9d96ae74211497c373baa2b4160e6d1",
+  "src/mcp_behavior/oracle.py": "34ea390db7a99ff3ddf9fc5c39bf9d42d2e9fb4ac767dfd38938c9f1d9d2a391",
+  "src/mcp_behavior/runner.py": "f04a681fde2e8cf69067699a9bdc01a3e084b1c75fd9808d5c37852ddf993655",
+  "src/mcp_behavior/transport.py": "33c9848725c4a4f4148f9b40aabe5be9454c74924d73cdfc4b485a8843c18df0",
+  "tests/test_behavior.py": "9ca4ba8cce53a2292fb6f9375a29b262c602c643d11f3d51c275e2404462a640",
+  "tests/test_cli.py": "eb10099df29bb7d3343af2f7bba35caa74bd2f3b1f7555ebddd74427c780c06d",
+  "tests/test_oracle.py": "ab220fe0593ad6406c7d416c528934c5628cf92407af0bd94613cf3a1c816ee0"
 }

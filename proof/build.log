@@ -1,2 +1,9 @@
-Building wheel for mcp-behavior
-Successfully built mcp_behavior-0.1.0-py3-none-any.whl
+Processing ./.
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: mcp-behavior
+  Building wheel for mcp-behavior (pyproject.toml): started
+  Building wheel for mcp-behavior (pyproject.toml): finished with status 'done'
+  Created wheel for mcp-behavior: filename=mcp_behavior-0.1.0-py3-none-any.whl size=30300 sha256=92ea842be2a90db2e1b87738ed9a3ceef2f01d43281fb974c63474c08c6ddddf
+  Stored in directory: /tmp/pip-ephem-wheel-cache-mspzfv8s/wheels/2a/c5/4d/f74453156b66fed877d6b57e05ef1ec065f40a186611616dd4
+Successfully built mcp-behavior

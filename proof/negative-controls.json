@@ -1,0 +1,386 @@
+{
+  "scope": "Selected negative-control scenarios, not complete server assessments",
+  "controls": [
+    {
+      "mode": "generic_error",
+      "expected_failure": "missing.error_reason",
+      "detected": {
+        "id": "missing.error_reason",
+        "lane": "readiness",
+        "status": "FAIL",
+        "reason": "bad input needs an error identifying the input and its cause",
+        "evidence": {
+          "message": "Error"
+        },
+        "required": true
+      },
+      "harness_errors": [],
+      "case": {
+        "id": "missing",
+        "input_manifest": [
+          {
+            "path": ".hidden.py",
+            "sha256": "945fe83d540dd540530421674cbb8dac27ed44b4884a8824b6cbb5e9af72ae18",
+            "bytes": 47
+          },
+          {
+            "path": "alpha_2a046944.py",
+            "sha256": "867f10d88603111be061ba9918d541b29789e3ead89abf690933a51466a83f30",
+            "bytes": 85
+          },
+          {
+            "path": "beta_2a046944.js",
+            "sha256": "ce4feb0e4a89d4c0535c2af891f776d81168f7fcb10487ac184fda156206c8cb",
+            "bytes": 115
+          },
+          {
+            "path": "empty.py",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          },
+          {
+            "path": "nested space/\u03c0.py",
+            "sha256": "57981e259e590f3dc0b6e08ddfcc71762a34ef4d87544b66ced4c97252f80ac4",
+            "bytes": 47
+          },
+          {
+            "path": "no_newline.js",
+            "sha256": "c3798f7c4d786a52eed8f8855be461ecbc041bfe6a9561c7ef32e7562e00b45d",
+            "bytes": 67
+          },
+          {
+            "path": "notes.txt",
+            "sha256": "846a4c47ec88526143a2280f7234b451cf0db225ae4b9d817d7b428e8df8b8b5",
+            "bytes": 39
+          },
+          {
+            "path": "unsupported.bin",
+            "sha256": "2da45f2cd1f9c8e69a67abf7a6b26c282533d0a7686787a9533265418680d4d2",
+            "bytes": 3
+          }
+        ],
+        "unsafe_entries": [],
+        "root": "/tmp/tmpuexv_2af/missing/watched/workspace",
+        "preconditions": {
+          "outside_canary_readable": true,
+          "cwd_decoy_readable": true,
+          "probe_uid": 0,
+          "probe_gid": 0,
+          "probe_cap_eff": "0000000000000000",
+          "probe_no_new_privs": "1"
+        },
+        "response": {
+          "wire_bytes": 94,
+          "wire_sha256": "85743931c6e109b20e7a655ad3c65798d46de972f428cfa462f00f2382630b40",
+          "is_error": true
+        },
+        "transport": {
+          "stdout_bytes": 603,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "messages": 4,
+          "server_reported_identity": {
+            "name": "reference-inventory",
+            "version": "0.1.0"
+          },
+          "protocol_version": "2025-11-25",
+          "tools_sha256": "2e723fb2f4a9a9d8b242b542d9b5350afa3fc8eca518ab17ac3a44b13e2319d6",
+          "events": [],
+          "phase": "tools/call"
+        },
+        "snapshot_before_sha256": "edd7b6ebaaf83f253d621012e17027504fc911485cc7fc9d13abc598ff879db4",
+        "snapshot_after_sha256": "edd7b6ebaaf83f253d621012e17027504fc911485cc7fc9d13abc598ff879db4",
+        "changed_paths": []
+      }
+    },
+    {
+      "mode": "half_scan",
+      "expected_failure": "normal.coverage",
+      "detected": {
+        "id": "normal.coverage",
+        "lane": "readiness",
+        "status": "FAIL",
+        "reason": "fixture files were omitted, failed, or replaced by unexpected records",
+        "evidence": {
+          "missing_supported": [
+            "beta_c8932275.js",
+            "no_newline.js"
+          ],
+          "unexpected": []
+        },
+        "required": true
+      },
+      "harness_errors": [],
+      "case": {
+        "id": "normal",
+        "input_manifest": [
+          {
+            "path": ".hidden.py",
+            "sha256": "945fe83d540dd540530421674cbb8dac27ed44b4884a8824b6cbb5e9af72ae18",
+            "bytes": 47
+          },
+          {
+            "path": "alpha_c8932275.py",
+            "sha256": "b2fd9de123eeb1f1cf54ba2d57e376f2bb74589bd64f370a2eabbecbc1ab6291",
+            "bytes": 85
+          },
+          {
+            "path": "beta_c8932275.js",
+            "sha256": "f427ac917955b0a7990a977694cda313cc7f13eaabf5c39f1c2ce2710a895407",
+            "bytes": 115
+          },
+          {
+            "path": "empty.py",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          },
+          {
+            "path": "nested space/\u03c0.py",
+            "sha256": "57981e259e590f3dc0b6e08ddfcc71762a34ef4d87544b66ced4c97252f80ac4",
+            "bytes": 47
+          },
+          {
+            "path": "no_newline.js",
+            "sha256": "c3798f7c4d786a52eed8f8855be461ecbc041bfe6a9561c7ef32e7562e00b45d",
+            "bytes": 67
+          },
+          {
+            "path": "notes.txt",
+            "sha256": "9dc8c5879aeeaa7249217d230db7ae05b95f2e543d461deff3a094ce3d18c804",
+            "bytes": 39
+          },
+          {
+            "path": "unsupported.bin",
+            "sha256": "2da45f2cd1f9c8e69a67abf7a6b26c282533d0a7686787a9533265418680d4d2",
+            "bytes": 3
+          }
+        ],
+        "unsafe_entries": [],
+        "root": "/tmp/tmp1bm7p5it/normal/watched/workspace",
+        "preconditions": {
+          "outside_canary_readable": true,
+          "cwd_decoy_readable": true,
+          "probe_uid": 0,
+          "probe_gid": 0,
+          "probe_cap_eff": "0000000000000000",
+          "probe_no_new_privs": "1"
+        },
+        "response": {
+          "wire_bytes": 793,
+          "wire_sha256": "7dfa304785d67f50a28f7ce10bf8beeb93e0dc486e8db7f5763238e0d3dd7452",
+          "is_error": false
+        },
+        "transport": {
+          "stdout_bytes": 1302,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "messages": 4,
+          "server_reported_identity": {
+            "name": "reference-inventory",
+            "version": "0.1.0"
+          },
+          "protocol_version": "2025-11-25",
+          "tools_sha256": "2e723fb2f4a9a9d8b242b542d9b5350afa3fc8eca518ab17ac3a44b13e2319d6",
+          "events": [],
+          "phase": "tools/call"
+        },
+        "snapshot_before_sha256": "80474c69f79564c9da394e08cd9c26901b9263519628705b78e8e4bf2769c744",
+        "snapshot_after_sha256": "80474c69f79564c9da394e08cd9c26901b9263519628705b78e8e4bf2769c744",
+        "changed_paths": []
+      }
+    },
+    {
+      "mode": "oversized",
+      "expected_failure": "normal.bounded_output",
+      "detected": {
+        "id": "normal.bounded_output",
+        "lane": "readiness",
+        "status": "FAIL",
+        "reason": "server exceeded the frame byte limit before a newline or JSON decoding",
+        "evidence": {
+          "failure_kind": "frame_limit",
+          "stdout_bytes": 279037,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "messages": 3,
+          "server_reported_identity": {
+            "name": "reference-inventory",
+            "version": "0.1.0"
+          },
+          "protocol_version": "2025-11-25",
+          "tools_sha256": "2e723fb2f4a9a9d8b242b542d9b5350afa3fc8eca518ab17ac3a44b13e2319d6",
+          "events": [],
+          "phase": "tools/call",
+          "observed_frame_bytes": 278528,
+          "observed_prefix_sha256": "1ba079314eceb2ca07ef4e631e63ac7a6246f9fefded54eff4602e057d4fbbbf"
+        },
+        "required": true
+      },
+      "harness_errors": [],
+      "case": {
+        "id": "normal",
+        "input_manifest": [
+          {
+            "path": ".hidden.py",
+            "sha256": "945fe83d540dd540530421674cbb8dac27ed44b4884a8824b6cbb5e9af72ae18",
+            "bytes": 47
+          },
+          {
+            "path": "alpha_9f204666.py",
+            "sha256": "8ff4ceb9b55f5c4bf58c5b9fffcf2be29631ff9e2f577500cf359087cb1ce6b6",
+            "bytes": 85
+          },
+          {
+            "path": "beta_9f204666.js",
+            "sha256": "9dd78b1db611593aeb824702c95753657b37e8a77bf161d2c894c72c8bb5b904",
+            "bytes": 115
+          },
+          {
+            "path": "empty.py",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          },
+          {
+            "path": "nested space/\u03c0.py",
+            "sha256": "57981e259e590f3dc0b6e08ddfcc71762a34ef4d87544b66ced4c97252f80ac4",
+            "bytes": 47
+          },
+          {
+            "path": "no_newline.js",
+            "sha256": "c3798f7c4d786a52eed8f8855be461ecbc041bfe6a9561c7ef32e7562e00b45d",
+            "bytes": 67
+          },
+          {
+            "path": "notes.txt",
+            "sha256": "10f16f3b2e16bb0eaca1a10ae175607d47061543d0df6c75ebed6a88cfaa12c6",
+            "bytes": 39
+          },
+          {
+            "path": "unsupported.bin",
+            "sha256": "2da45f2cd1f9c8e69a67abf7a6b26c282533d0a7686787a9533265418680d4d2",
+            "bytes": 3
+          }
+        ],
+        "unsafe_entries": [],
+        "root": "/tmp/tmp0mac8f6n/normal/watched/workspace",
+        "preconditions": {
+          "outside_canary_readable": true,
+          "cwd_decoy_readable": true,
+          "probe_uid": 0,
+          "probe_gid": 0,
+          "probe_cap_eff": "0000000000000000",
+          "probe_no_new_privs": "1"
+        },
+        "transport": {
+          "stdout_bytes": 279037,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "messages": 3,
+          "server_reported_identity": {
+            "name": "reference-inventory",
+            "version": "0.1.0"
+          },
+          "protocol_version": "2025-11-25",
+          "tools_sha256": "2e723fb2f4a9a9d8b242b542d9b5350afa3fc8eca518ab17ac3a44b13e2319d6",
+          "events": [],
+          "phase": "tools/call"
+        },
+        "snapshot_before_sha256": "c3859759ec9f7f807291951e3bf959ad78f1fe9ea050ac0c6feeb855513b2529",
+        "snapshot_after_sha256": "c3859759ec9f7f807291951e3bf959ad78f1fe9ea050ac0c6feeb855513b2529",
+        "changed_paths": []
+      }
+    },
+    {
+      "mode": "cwd_relative",
+      "expected_failure": "relative.path_boundary",
+      "detected": {
+        "id": "relative.path_boundary",
+        "lane": "security",
+        "status": "FAIL",
+        "reason": "out-of-contract paths require an explicit, reasoned refusal",
+        "evidence": {
+          "message": ""
+        },
+        "required": true
+      },
+      "harness_errors": [],
+      "case": {
+        "id": "relative",
+        "input_manifest": [
+          {
+            "path": ".hidden.py",
+            "sha256": "945fe83d540dd540530421674cbb8dac27ed44b4884a8824b6cbb5e9af72ae18",
+            "bytes": 47
+          },
+          {
+            "path": "alpha_e73b9835.py",
+            "sha256": "e3176d987eebefbe44beaad01739f5e2c037b4e97d38c072ec0de368001ff001",
+            "bytes": 85
+          },
+          {
+            "path": "beta_e73b9835.js",
+            "sha256": "a47ac16a4d55631a432ae62ca3e0fc917702a359af352bd113934c6b4565c8a6",
+            "bytes": 115
+          },
+          {
+            "path": "empty.py",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          },
+          {
+            "path": "nested space/\u03c0.py",
+            "sha256": "57981e259e590f3dc0b6e08ddfcc71762a34ef4d87544b66ced4c97252f80ac4",
+            "bytes": 47
+          },
+          {
+            "path": "no_newline.js",
+            "sha256": "c3798f7c4d786a52eed8f8855be461ecbc041bfe6a9561c7ef32e7562e00b45d",
+            "bytes": 67
+          },
+          {
+            "path": "notes.txt",
+            "sha256": "1204c20b434bec0ecd02641b0fcd6f64d109c9259e04d00ac38746a19a6bbde1",
+            "bytes": 39
+          },
+          {
+            "path": "unsupported.bin",
+            "sha256": "2da45f2cd1f9c8e69a67abf7a6b26c282533d0a7686787a9533265418680d4d2",
+            "bytes": 3
+          }
+        ],
+        "unsafe_entries": [],
+        "root": "/tmp/tmp803xxd4i/relative/watched/workspace",
+        "preconditions": {
+          "outside_canary_readable": true,
+          "cwd_decoy_readable": true,
+          "probe_uid": 0,
+          "probe_gid": 0,
+          "probe_cap_eff": "0000000000000000",
+          "probe_no_new_privs": "1"
+        },
+        "response": {
+          "wire_bytes": 345,
+          "wire_sha256": "89727823374e03db5ec297f4d604107bbb733251d634e0972c809ebbba4a036a",
+          "is_error": false
+        },
+        "transport": {
+          "stdout_bytes": 854,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "messages": 4,
+          "server_reported_identity": {
+            "name": "reference-inventory",
+            "version": "0.1.0"
+          },
+          "protocol_version": "2025-11-25",
+          "tools_sha256": "2e723fb2f4a9a9d8b242b542d9b5350afa3fc8eca518ab17ac3a44b13e2319d6",
+          "events": [],
+          "phase": "tools/call"
+        },
+        "snapshot_before_sha256": "93c0894c17ba44c395810d105368d8eddf9301209196f7751befda7a801260d7",
+        "snapshot_after_sha256": "93c0894c17ba44c395810d105368d8eddf9301209196f7751befda7a801260d7",
+        "changed_paths": []
+      }
+    }
+  ]
+}

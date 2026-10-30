@@ -1,1 +1,7 @@
+Processing ./dist/mcp_behavior-0.1.0-py3-none-any.whl
+Installing collected packages: mcp-behavior
+  Attempting uninstall: mcp-behavior
+    Found existing installation: mcp-behavior 0.1.0
+    Uninstalling mcp-behavior-0.1.0:
+      Successfully uninstalled mcp-behavior-0.1.0
 Successfully installed mcp-behavior-0.1.0

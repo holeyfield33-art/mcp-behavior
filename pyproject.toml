@@ -1,15 +1,14 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-behavior"
 version = "0.1.0"
-description = "Independent behavioral assessment harness for MCP servers"
+description = "Fixture-based behavioral assessments of running MCP servers"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
-authors = [{name = "Aletheia Sovereign Systems"}]
+dependencies = []
 
 [project.scripts]
 mcp-behavior = "mcp_behavior.cli:main"

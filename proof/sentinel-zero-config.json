@@ -1,0 +1,56 @@
+{
+  "schema_version": "mcp-behavior-config/v1",
+  "command": [
+    "/workspace/scratch/2c2f33936de9/review-venv/bin/python",
+    "-m",
+    "sentinel_zero.mcp_server"
+  ],
+  "identity": {
+    "name": "Sentinel-Zero external test subject",
+    "version": "git:303267e4786735b068ed544936480b2368194b01",
+    "artifacts": [
+      "/workspace/scratch/2c2f33936de9/code-sentinel/pyproject.toml",
+      "/workspace/scratch/2c2f33936de9/code-sentinel/sentinel_zero/mcp_server.py",
+      "/workspace/scratch/2c2f33936de9/code-sentinel/sentinel_zero/dogfood_scan.py",
+      "/workspace/scratch/2c2f33936de9/code-sentinel/sentinel_zero/resolvers/python_resolver.py",
+      "/workspace/scratch/2c2f33936de9/code-sentinel/sentinel_zero/repo_detect.py",
+      "/workspace/scratch/2c2f33936de9/code-sentinel/sentinel_zero/source_inputs.py"
+    ]
+  },
+  "limits": {
+    "timeout_seconds": 15
+  },
+  "profile": {
+    "id": "readonly-repository-scanner-observation",
+    "version": "1.0.0",
+    "tool": "analyze_repository",
+    "path_argument": "repo_path",
+    "supported_suffixes": [
+      ".py",
+      ".js"
+    ],
+    "relative_paths": "reject",
+    "ignored_timestamps": [
+      "/plans/*/generated_at"
+    ],
+    "observations": {
+      "processed": {
+        "pointer": "/analyzed_files",
+        "path": ""
+      },
+      "failed": {
+        "pointer": "/parse_errors",
+        "path": "/file_path",
+        "reason": "/error"
+      },
+      "excluded": null,
+      "complete": null,
+      "counts": {
+        "processed": "/modules_scanned"
+      }
+    },
+    "arguments": {
+      "probe_mode": "static"
+    }
+  }
+}

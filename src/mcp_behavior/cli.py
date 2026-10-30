@@ -2,116 +2,94 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
-import sys
-import traceback
+import tempfile
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from . import __version__
-from .config import load_config
-from .model import HarnessError, Status, verdict
-from .runner import run_suite
+from .config import Config
+from .model import HarnessError
+from .runner import Runner
 
 
-def _atomic_write(path: Path, data: dict) -> None:
-    path = path.resolve()
-    if path.is_symlink() or path.parent.is_symlink():
-        raise HarnessError(f"refusing to write through symlink: {path}")
-    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
+def cell(value: Any) -> str:
+    return html.escape(str(value)).replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+
+
+def readable(report: dict[str, Any]) -> str:
+    lines = ["# MCP Behavior assessment", "", f"Overall: **{report['verdict']}**", ""]
+    for lane, result in report.get("lanes", {}).items():
+        lines.append(f"{lane.capitalize()}: **{result}**  ")
+    lines.extend(["", report.get("scope", ""), "", "| Check | Lane | Result | Evidence / reason |",
+                  "|---|---|---|---|"])
+    for check in report.get("checks", []):
+        lines.append("| " + " | ".join(cell(check[k]) for k in ("id", "lane", "status", "reason")) + " |")
+    lines.extend(["", "## Assessment identity", "", "```json", json.dumps({k: report[k] for k in
+                  ("target", "profile", "config_sha256", "limits") if k in report}, indent=2, ensure_ascii=True), "```", "",
+                  "## Limits on the conclusion", ""])
+    lines.extend("- " + cell(x) for x in report.get("limitations", []))
+    if report.get("harness_errors"):
+        lines.extend(["", "Harness errors prevented evidence collection. See the JSON report."])
+    return "\n".join(lines) + "\n"
+
+
+def atomic_write(path: Path, data: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.is_symlink():
+        raise HarnessError("report destination cannot be a symlink")
+    fd, temporary = tempfile.mkstemp(prefix=".report-", dir=path.parent)
     try:
-        tmp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        os.replace(tmp, path)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
     finally:
-        if tmp.exists():
-            try:
-                tmp.unlink()
-            except OSError:
-                pass
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mcp-behavior")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    sub = parser.add_subparsers(dest="cmd", required=True)
-
-    run_p = sub.add_parser("run", help="run the read-only repository profile against a stdio server")
-    run_p.add_argument("--config", required=True, help="path to reviewer-owned config JSON")
-    run_p.add_argument("--output", required=True, help="path for the JSON report")
-    run_p.add_argument("--native", action="store_true", help="allow native (non-isolated) execution; records containment UNKNOWN")
-    run_p.add_argument("--server-uid", type=int, default=None)
-    run_p.add_argument("--server-gid", type=int, default=None)
-
+    parser.add_argument("--version", action="version", version=__version__)
+    sub = parser.add_subparsers(dest="action", required=True)
+    run = sub.add_parser("run", help="run the read-only repository profile against a stdio server")
+    run.add_argument("--config", required=True, type=Path)
+    run.add_argument("--output", required=True, type=Path, help="JSON report; adjacent .md report is also written")
+    run.add_argument("--native", action="store_true", help="explicitly allow host subprocess execution; containment remains UNKNOWN")
+    run.add_argument("--server-uid", type=int, help="privileged Linux parent only: drop the server to this nonzero UID")
+    run.add_argument("--server-gid", type=int)
     args = parser.parse_args(argv)
-    if args.cmd != "run":
-        parser.error("unknown command")
-
     if not args.native:
-        print("native execution required for this release; pass --native after reviewing the subject", file=sys.stderr)
-        return 2
-
+        parser.error("v1 requires --native; run only reviewed servers in a disposable environment; containment cannot pass")
     run_id = str(uuid.uuid4())
-    started = datetime.now(timezone.utc).isoformat()
-    out_path = Path(args.output)
-
-    # Write RUNNING marker so a crash cannot leave a stale PASS.
     try:
-        _atomic_write(out_path, {
-            "run_id": run_id,
-            "status": "RUNNING",
-            "started_at": started,
-            "verdict": "INCOMPLETE",
-        })
+        if args.output.suffix != ".json":
+            raise HarnessError("--output must end in .json")
+        config = Config.load(args.config)
+        # Keep evidence outside explicitly identified target artifacts.
+        destinations = (args.output.resolve(), args.output.with_suffix(".md").resolve())
+        protected = {p.resolve() for p in config.artifacts} | {args.config.resolve()}
+        if any(p in protected for p in destinations):
+            raise HarnessError("report destination overlaps the configuration or a target artifact")
+        pending = {"schema_version": "mcp-behavior-report/v1", "run_id": run_id,
+                   "verdict": "INCOMPLETE", "state": "RUNNING", "checks": []}
+        atomic_write(args.output, json.dumps(pending, indent=2) + "\n")
+        atomic_write(args.output.with_suffix(".md"), "# MCP Behavior assessment\n\nINCOMPLETE: run has not finished.\n")
+        report = Runner(config, args.server_uid, args.server_gid).run()
+        report["run_id"] = run_id
+        report["state"] = "FINISHED"
+        # JSON is the authoritative commit marker for this pair of files.
+        atomic_write(args.output.with_suffix(".md"), readable(report))
+        atomic_write(args.output, json.dumps(report, indent=2, ensure_ascii=True, allow_nan=False) + "\n")
+        print(json.dumps({"run_id": run_id, "verdict": report["verdict"], "lanes": report["lanes"], "report": str(args.output.absolute())}))
+        return {"PASS": 0, "FAIL": 1, "INCOMPLETE": 2}[report["verdict"]]
     except Exception as exc:
-        print(f"cannot write output: {exc}", file=sys.stderr)
-        return 2
-
-    try:
-        cfg = load_config(Path(args.config))
-        report = run_suite(
-            cfg,
-            run_id=run_id,
-            native=True,
-            server_uid=args.server_uid,
-            server_gid=args.server_gid,
-        )
-        report["started_at"] = started
-        report["finished_at"] = datetime.now(timezone.utc).isoformat()
-        report["status"] = "FINISHED"
-        _atomic_write(out_path, report)
-
-        overall = report.get("verdict", "INCOMPLETE")
-        if overall == "PASS":
-            return 0
-        if overall == "FAIL":
-            return 1
-        return 2
-    except HarnessError as exc:
-        _atomic_write(out_path, {
-            "run_id": run_id,
-            "status": "FINISHED",
-            "started_at": started,
-            "finished_at": datetime.now(timezone.utc).isoformat(),
-            "verdict": "INCOMPLETE",
-            "harness_error": str(exc)[:1024],
-        })
+        # Consumers must require exit 0, matching run_id, and state FINISHED.
+        # If the destination itself cannot be written, only stdout/exit status can be updated.
         print(json.dumps({"run_id": run_id, "verdict": "INCOMPLETE", "harness_error": str(exc)[:1024]}))
         return 2
-    except Exception as exc:
-        _atomic_write(out_path, {
-            "run_id": run_id,
-            "status": "FINISHED",
-            "started_at": started,
-            "finished_at": datetime.now(timezone.utc).isoformat(),
-            "verdict": "INCOMPLETE",
-            "harness_error": f"internal: {exc}"[:1024],
-            "traceback": traceback.format_exc()[:4096],
-        })
-        print(json.dumps({"run_id": run_id, "verdict": "INCOMPLETE", "harness_error": str(exc)[:1024]}))
-        return 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
