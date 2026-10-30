@@ -1,1 +1,12 @@
-{"schema": "mcp-behavior-source-sha256/v1", "files": {"src/mcp_behavior/__init__.py": "e5f8a2c1b9d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2", "src/mcp_behavior/__main__.py": "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0", "src/mcp_behavior/cli.py": "placeholder", "src/mcp_behavior/config.py": "placeholder", "src/mcp_behavior/fixtures.py": "placeholder", "src/mcp_behavior/model.py": "placeholder", "src/mcp_behavior/oracle.py": "placeholder", "src/mcp_behavior/runner.py": "placeholder", "src/mcp_behavior/transport.py": "placeholder"}}
+{
+  "examples/reference.json": "c4169d302a7729eac0c3713261a6fd8b3cb01bb4d235846e3b55f9f7b9066849",
+  "examples/reference_server.py": "ab78139ec7ce9628cca9438db30ace50ae56defa8999e65da2c6daac36e3c7e0",
+  "src/mcp_behavior/__init__.py": "placeholder-see-local",
+  "src/mcp_behavior/cli.py": "placeholder-see-local",
+  "src/mcp_behavior/config.py": "placeholder-see-local",
+  "src/mcp_behavior/fixtures.py": "placeholder-see-local",
+  "src/mcp_behavior/model.py": "placeholder-see-local",
+  "src/mcp_behavior/oracle.py": "placeholder-see-local",
+  "src/mcp_behavior/runner.py": "placeholder-see-local",
+  "src/mcp_behavior/transport.py": "placeholder-see-local"
+}

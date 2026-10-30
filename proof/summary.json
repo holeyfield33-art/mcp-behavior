@@ -1,0 +1,23 @@
+{
+  "reference": {
+    "verdict": "INCOMPLETE",
+    "lanes": {
+      "readiness": "PASS",
+      "security": "INCOMPLETE"
+    },
+    "cases": 14
+  },
+  "sentinel_zero": {
+    "verdict": "FAIL",
+    "lanes": {
+      "readiness": "FAIL",
+      "security": "FAIL"
+    },
+    "cases": 14
+  },
+  "tests": {
+    "passed": 38,
+    "failed": 0
+  },
+  "note": "Full detailed reports in reference.json / sentinel-zero.json. Native containment remains required UNKNOWN."
+}
