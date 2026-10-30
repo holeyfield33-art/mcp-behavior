@@ -1,6 +1,6 @@
-"""Cgroup-v2 supervision self-test for fixed controller-owned helpers.
+"""Cgroup-v2 scope controls and fixed controller-owned helper self-test.
 
-This module never receives the configured MCP command. It prepares an explicitly
+The helper probe never receives the configured MCP command. It prepares an explicitly
 delegated child cgroup, verifies limits and membership before releasing a helper,
 and verifies recursive kill/empty/removal after an intentionally detached child.
 It is not run-level subject containment or a kernel stress-test certification.
@@ -26,6 +26,10 @@ from .namespace_runtime import PROBE_ENV, ProbeResult
 CGROUP2_SUPER_MAGIC = 0x63677270
 CONTROL_MAX_BYTES = 32768
 TEARDOWN_SECONDS = 2.0
+
+
+class ResourceLimitExceeded(ValueError):
+    """A valid kernel observation shows a configured budget intervention."""
 
 
 @dataclass(frozen=True)
@@ -149,9 +153,9 @@ class CgroupScope:
     def check_budget(self) -> dict[str, Any]:
         usage = self.usage()
         if usage["cpu"]["usage_usec"] > self.limits.cpu_seconds * 1_000_000:
-            raise ValueError("helper exceeded sampled aggregate CPU budget")
+            raise ResourceLimitExceeded("supervised process exceeded sampled aggregate CPU budget")
         if usage["memory"]["oom_kill"] or usage["pids"]["max"]:
-            raise ValueError("helper hit a memory or PID resource limit")
+            raise ResourceLimitExceeded("supervised process hit a memory or PID resource limit")
         return usage
 
     def cleanup(self) -> dict[str, Any]:

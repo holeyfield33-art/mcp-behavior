@@ -56,6 +56,7 @@ class IsolationPolicy:
     max_pids: int = 64
     network: str = "deny"  # deny | inherit (inherit only valid for native)
     cgroup_parent: str | None = None
+    namespace_subject: bool = False
 
 
 class IsolationBackend:
@@ -132,12 +133,23 @@ class NativeBackend(IsolationBackend):
 class NamespaceBackend(IsolationBackend):
     """Linux user/mount/pid/network namespaces + cgroup v2 (v0.2.0 target).
 
-    This module implements preflight and the public contract. Full subject
-    launch and external observers land in subsequent checkpoints. Until those
-    exist, preflight reports incomplete controls and refuses a containment PASS.
+    Explicit experimental subject launch requires the helper gates. Full
+    run-level acceptance is separate: preflight retains incomplete containment
+    controls and never supplies a containment PASS.
     """
 
     mode = ExecutionMode.NAMESPACE
+
+    @staticmethod
+    def launch_ready(result: PreflightResult, policy: IsolationPolicy) -> bool:
+        required = {"platform", "cgroup_v2", "user_namespace", "namespace_tools",
+                    "host_path_probe", "network_endpoint_probe", "cgroup_supervisor_probe"}
+        findings = {f.id: f for f in result.findings}
+        return (policy.namespace_subject and policy.cgroup_parent is not None
+                and policy.server_uid is None and policy.server_gid is None
+                and result.mode == ExecutionMode.NAMESPACE
+                and result.observed.get("launch_policy") == vars(policy)
+                and all(key in findings and findings[key].ok is True for key in required))
 
     def preflight(self, policy: IsolationPolicy) -> PreflightResult:
         findings: list[PreflightFinding] = []
@@ -145,6 +157,7 @@ class NamespaceBackend(IsolationBackend):
             "platform": sys.platform,
             "euid": os.geteuid(),
             "egid": os.getegid(),
+            "launch_policy": dict(vars(policy)),
         }
 
         if sys.platform != "linux":
@@ -204,8 +217,9 @@ class NamespaceBackend(IsolationBackend):
 
         findings.append(PreflightFinding(
             "launcher_implemented",
-            False,
-            "candidate namespace layout exists; supervised subject launch is not integrated",
+            policy.namespace_subject and policy.server_uid is None and policy.server_gid is None,
+            "experimental supervised subject launch opted in" if policy.namespace_subject else
+            "subject launch requires --namespace-subject; helper-only mode selected",
             required=True,
         ))
         findings.append(PreflightFinding(

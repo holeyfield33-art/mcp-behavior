@@ -4,7 +4,7 @@ A standalone Linux CLI that drives a running MCP server and checks its behavior 
 
 The question is narrow: **can a caller rely on this tool's results and failure reports, under this versioned profile?** The server's description is never the answer key. The Python package uses only the standard library. Namespace preflight additionally needs Linux bubblewrap and an explicitly delegated cgroup-v2 directory.
 
-**Status: development version `0.2.0.dev3`, checkpoint 3; the original behavioral prototype was 0.1.0.** Native mode runs reviewed subjects and always keeps containment UNKNOWN. Namespace mode runs fixed trusted preflight helpers only; it launches **zero MCP subjects**, even when individual helper probes succeed. Overall containment remains unverified. Version 0.2.0 has not been released.
+**Status: development version `0.2.0.dev4`, experimental checkpoint 4; the original behavioral prototype was 0.1.0.** Native mode runs reviewed subjects and always keeps containment UNKNOWN. Namespace mode defaults to fixed trusted helpers and zero MCP subjects. Explicit `--namespace-subject` enables reviewed subject sessions only after the required helper probes pass. Overall containment remains UNKNOWN; the full run-level matrix is incomplete. Version 0.2.0 has not been released.
 
 ## Run the first proof
 
@@ -41,7 +41,7 @@ PYTHONPATH=src python -m mcp_behavior run \
   --isolation namespace
 ```
 
-Expected at this checkpoint: **exit 2, FINISHED/INCOMPLETE, zero subject cases, containment UNKNOWN**. Preflight may launch controller-owned helper processes. It never launches the configured MCP command or falls back to native execution.
+Expected without `--namespace-subject`: **exit 2, FINISHED/INCOMPLETE, zero subject cases, containment UNKNOWN**. Preflight may launch controller-owned helper processes. There is no native fallback.
 
 To exercise the cgroup helper self-test, pass an existing, canonical, host-delegated directory with `cpu`, `memory` and `pids` controllers already enabled:
 
@@ -54,6 +54,37 @@ PYTHONPATH=src python -m mcp_behavior run \
 ```
 
 The path is a placeholder; a normal directory containing files named like cgroup controls is rejected. The harness creates and removes its own leaf and never enables parent controllers or changes parent limits. `--cgroup-parent` is rejected in native mode. The JSON report records the requested isolation policy and its digest separately from the profile/config digest.
+
+For experimental supervised sessions of a reviewed configured server, add the opt-in:
+
+```bash
+PYTHONPATH=src python -m mcp_behavior run \
+  --config examples/reference.json --output out/namespace-subject.json \
+  --isolation namespace --namespace-subject \
+  --cgroup-parent /sys/fs/cgroup/YOUR_DELEGATED_DIRECTORY
+```
+
+Host-path, IPv4/IPv6 endpoint and cgroup helper probes must all pass. Each MCP
+session then gets a fresh cgroup; the controller verifies bootstrap membership
+before release into bubblewrap, samples aggregate resource evidence and verifies
+recursive teardown. The report retains containment UNKNOWN and overall INCOMPLETE
+for the correct reference control (behavioral failures still take precedence).
+`preflight_ok` covers the full unfinished containment requirements;
+`subject_launch_supported` records readiness for this experimental session path.
+Declared artifact files are mounted read-only, not their parent source trees.
+Undeclared imports may fail. Namespace UID/GID overrides are refused.
+Use explicit system runtime executable paths when the harness is installed in a
+virtual environment; virtualenv interpreter aliases and dependency trees are not
+automatically exposed to the subject.
+See [the design and acceptance criteria](docs/CHECKPOINT4.md).
+
+Explicit capable-host integration tests (never enabled implicitly):
+
+```bash
+MCP_BEHAVIOR_CGROUP_PARENT=/sys/fs/cgroup/YOUR_DELEGATED_DIRECTORY \
+MCP_BEHAVIOR_SUBJECT_LIVE=1 PYTHONPATH=src \
+  python -m unittest discover -s tests -v
+```
 
 | Helper evidence | What it establishes |
 |---|---|

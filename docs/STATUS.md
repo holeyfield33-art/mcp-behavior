@@ -1,6 +1,6 @@
 # Implementation and proof status
 
-Updated 2026-10-30. Repository: https://github.com/holeyfield33-art/mcp-behavior. Development package version: **0.2.0.dev3**. Development target: **0.2.0**, not released.
+Updated 2026-10-30. Repository: https://github.com/holeyfield33-art/mcp-behavior. Development package version: **0.2.0.dev4**. Development target: **0.2.0**, not released.
 
 Decision: **GO for reviewed local behavioral runs and trusted-helper development; NO-GO for arbitrary hostile MCP subjects, broad security certification or a containment PASS.**
 
@@ -10,22 +10,23 @@ Decision: **GO for reviewed local behavioral runs and trusted-helper development
 |---|---|---|
 | 1 — interface and fail-closed preflight | Merged PR #1; backend selection, full Runner, fresh reports | 48-test checkpoint baseline; namespace zero subject launches, native containment UNKNOWN |
 | 2 — candidate namespace layout | Merged PR #2; bounded trusted host-path helper, private fixtures, strict nonce/schema validation | 76-test checkpoint baseline; actual subject launch intentionally disabled |
-| 3 — supervision and network observations | Controller-owned IPv4/IPv6 TCP listeners, required host controls, cgroup-v2 helper supervision, `--cgroup-parent`, policy digest and regression cases | Implemented for trusted helpers; positive live cgroup/namespace acceptance is pending on a capable host |
-| Run-level containment | Not integrated | Actual MCP subject supervision, protected oracle/controller storage, complete network policy and descendant teardown remain required |
+| 3 — supervision and network observations | Merged PR #3 (`d434494`); controller-owned IPv4/IPv6 TCP listeners and cgroup-v2 helper supervision | User-recorded capable-host evidence: 109 passed, zero skipped; all helper probes green in a privileged Ubuntu 24.04 Docker Desktop/WSL2 container |
+| 4 — experimental subject sessions | Explicit `--namespace-subject`, policy-bound probe gate, per-session cgroup, membership-before-release, bounded MCP transport and recursive teardown | In development on a branch from `d434494`; see [design and acceptance criteria](CHECKPOINT4.md). Default remains helper-only |
+| Run-level containment | Partial session integration; no containment PASS | Full protected oracle/controller storage, egress, resource-intervention and descendant/race matrix remains required |
 | External read/write/race coverage | Not implemented | Quiet canaries and final snapshots remain insufficient |
 | Fixed Sentinel-Zero acceptance | Pending | Reference control cannot substitute for a fixed real-subject retest |
 
-Checkpoint 3 validation: **109 tests discovered, 108 passed, one live cgroup integration test skipped** because no delegated cgroup path was supplied. Ordinary-file control models test contracts and failure handling; they are not kernel containment proof. Installed-wheel checks retain native readiness PASS/containment UNKNOWN and namespace zero subject cases, reject fake cgroup directories and verify the policy digest. A fresh-checkout run is required before merge.
+Checkpoint 3 validation on merged `d434494`: **109 passed, zero skipped** with explicit delegation; all helper probes passed and helper-only namespace smoke remained FINISHED/INCOMPLETE with zero cases. This evidence is specific to a privileged Ubuntu 24.04 container on Docker Desktop/WSL2, not bare-metal or a non-root delegated harness. Ordinary-file control models are not kernel proof. Evidence remains offline in a project-named bundle; no machine-specific bundle paths are committed.
 
 ## What the new evidence means
 
-Namespace preflight may start only fixed controller-owned helpers. It never starts the configured MCP command, even if all synthetic probes succeed. `launch_subject()` and Runner each retain their launch refusal. Required run-level gates remain incomplete; the resulting report is FINISHED/INCOMPLETE with zero subject cases and containment UNKNOWN.
+Namespace mode remains helper-only unless `--namespace-subject` is explicit. The experimental path requires green helper probes bound to the requested policy, then creates a fresh cgroup per subject session. A controller-owned bootstrap joins and blocks until sole membership and limits are verified; it then execs bubblewrap. There is no native fallback. The standalone ungated `launch_subject()` API still refuses. Full containment preflight remains incomplete even when experimental launch prerequisites pass, and containment remains UNKNOWN.
 
 The filesystem helper validates known nonempty private secrets before testing the candidate view. The network helper requires positive controls at both controller-owned IPv4 and IPv6 TCP endpoints and uses external receipts to catch leaked traffic, including a helper that lies about its connection outcome. It does not grade UDP, arbitrary routes, Unix sockets or every possible egress path.
 
-The cgroup self-test requires an explicitly delegated genuine cgroup-v2 directory. It sets and reads back limits in a fresh owned leaf, verifies bootstrap membership before release, observes a detached helper child, and uses `cgroup.kill` plus recursive `populated=0`, empty membership and removal as cleanup evidence. CPU bandwidth and sampled total CPU usage are distinct controls. It never changes parent limits or enables parent controllers. Resource stress acceptance and actual subject integration remain open.
+The cgroup self-test and experimental subject sessions require an explicitly delegated genuine cgroup-v2 directory. They set and read back limits in a fresh owned leaf and verify bootstrap membership before release. Subject transport samples aggregate usage and records recursive `cgroup.kill`, `populated=0`, empty membership and removal. CPU bandwidth and sampled total CPU usage are distinct controls. Parent limits/controllers are never changed. These observations do not complete the resource or containment matrix.
 
-On this development host, real host TCP positive controls succeed; bubblewrap 0.12.0 fails the candidate network-namespace operation with NETLINK_ROUTE `Operation not permitted`; no cgroup filesystem is exposed. Missing delegation and fake ordinary-file cgroup directories fail closed. These observations do not establish a positive containment proof.
+The earlier constrained host could not run bubblewrap network namespaces and exposed no cgroup filesystem. The later recorded Docker Desktop/WSL2 run closed the helper gap for its stated environment. Missing delegation and fake ordinary-file cgroup directories continue to fail closed.
 
 ## Historical v0.1.0 first proof — 2026-10-29
 
@@ -48,8 +49,8 @@ Historical real-subject readiness/security/overall: FAIL. The independent correc
 
 Archived evidence: `proof/summary.json`, `proof/reference.{json,md}`, `proof/sentinel-zero.{json,md}`, `proof/negative-controls.json`, logs and explicit source hashes. Archived configurations contain machine-specific launch paths and must be reviewed before reuse.
 
-Next: run the helper integration on a capable explicitly delegated Linux host, preserve its artifact/config/policy identities and negative controls, then integrate supervised subject transport without waiving the acceptance matrix in [ROADMAP.md](ROADMAP.md). HTTP/auth, new profile families, real-model scoring and commercial features remain outside this slice.
+Next: finish checkpoint 4 acceptance on a capable explicitly delegated Linux host without waiving the matrix in [ROADMAP.md](ROADMAP.md), then complete the run-level matrix and fixed Sentinel-Zero retest. HTTP/auth, new profile families, real-model scoring and commercial features remain outside this slice.
 
 Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
 
-Hosted verification attempt [41122595917](https://github.com/holeyfield33-art/mcp-behavior/actions/runs/41122595917), on 2026-10-30, failed before the live-helper job executed any steps and produced no job log. Its failure annotation was not retrievable in this session. No positive hosted containment evidence is recorded. [Checkpoint 3 PR #3](https://github.com/holeyfield33-art/mcp-behavior/pull/3) remains unmerged pending successful hosted verification; local validation is 108 passing tests with one explicitly skipped live cgroup test.
+Hosted run [41133686609](https://github.com/holeyfield33-art/mcp-behavior/actions/runs/41133686609) on merged `d434494` failed before either job started. Both annotations state that the account is locked due to a billing issue; artifact count was zero. This does not diagnose cgroup setup. Unlock billing before rerunning hosted checks. PR #3 is merged; local capable-host evidence is the available authority.

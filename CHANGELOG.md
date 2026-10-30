@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — 0.2.0.dev4, experimental checkpoint 4, 2026-10-30
+
+- Add explicit `--namespace-subject` opt-in after policy-bound host-path, network
+  endpoint and cgroup helper probes pass; helper-only mode remains the default.
+- Run each configured MCP session in a fresh cgroup through a blocked trusted
+  bootstrap, verify membership before release into bubblewrap, sample resource
+  usage, and record recursive teardown. Never fall back to native execution.
+- Mount declared artifact files read-only and preserve fixture/CWD paths; reject
+  unsupported namespace UID/GID overrides and unsafe mount layouts.
+- Add contract and capable-host integration tests; keep containment UNKNOWN until
+  the full run-level matrix is complete. Sentinel-Zero acceptance remains pending.
+- Record the user-confirmed checkpoint 3 helper evidence and confirmed hosted CI
+  billing blocker without committing local evidence paths.
+
 ## Unreleased — 0.2.0.dev3, checkpoint 3, 2026-10-30
 
 Development package/report version is now `0.2.0.dev3`; no stable 0.2.0 release or package-registry publication has occurred.

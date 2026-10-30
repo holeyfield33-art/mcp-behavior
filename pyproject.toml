@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-behavior"
-version = "0.2.0.dev3"
+version = "0.2.0.dev4"
 description = "Fixture-based behavioral assessments of running MCP servers"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -22,6 +22,7 @@ from typing import Any
 from . import __version__
 from .config import Limits, canonical, digest, strict_json
 from .model import HarnessError, ServerFault, UnsupportedEvidence
+from .subject import SubjectSession
 
 VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
 
@@ -64,7 +65,9 @@ class Frame:
 class StdioClient:
     def __init__(self, command: tuple[str, ...], cwd: Path, root: Path, home: Path,
                  limits: Limits, uid: int | None = None, gid: int | None = None,
-                 suite_deadline: float | None = None):
+                 suite_deadline: float | None = None, *, subject_session: SubjectSession | None = None,
+                 workspace: Path | None = None, artifacts: tuple[Path, ...] = ()):
+        self.subject_session = subject_session
         self.limits = limits
         self.root = root
         self.command = command
@@ -89,11 +92,19 @@ class StdioClient:
         self.case_deadline = started + limits.case_timeout_seconds
         self.suite_deadline = suite_deadline
         try:
-            self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            if subject_session is not None:
+                if workspace is None:
+                    raise HarnessError("supervised namespace session requires an explicit workspace")
+                self.process = subject_session.start(command, workspace, cwd, artifacts,
+                                                      min(self.case_deadline, suite_deadline or self.case_deadline))
+            else:
+                self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, cwd=cwd, env=env, start_new_session=True,
                                             preexec_fn=lambda: child_setup(limits, uid, gid))
-        except (OSError, subprocess.SubprocessError) as exc:
+        except (OSError, subprocess.SubprocessError, HarnessError) as exc:
             self.selector.close()
+            if isinstance(exc, HarnessError):
+                raise
             raise HarnessError(f"could not launch server: {type(exc).__name__}: {exc}") from exc
         self.launch_seconds = time.monotonic() - started
         assert self.process.stdout and self.process.stderr and self.process.stdin
@@ -129,6 +140,8 @@ class StdioClient:
         assert self.process.stdin
         view = memoryview(raw)
         while view:
+            if self.subject_session is not None:
+                self.subject_session.check()
             if time.monotonic() >= deadline:
                 self._expired()
             try:
@@ -140,6 +153,8 @@ class StdioClient:
                 raise self._fault("disconnect", "server closed stdin before the request completed") from exc
 
     def _pump(self, deadline: float) -> None:
+        if self.subject_session is not None:
+            self.subject_session.check()
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             self._expired()
@@ -297,6 +312,12 @@ class StdioClient:
         return frame
 
     def close(self) -> None:
+        if self.subject_session is not None:
+            try:
+                self.subject_session.close()
+            finally:
+                self.selector.close()
+            return
         # Kill the process group even if its leader has already exited. A native
         # child that deliberately leaves the group is a documented containment gap.
         try:
