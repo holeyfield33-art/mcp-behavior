@@ -60,12 +60,43 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run", help="run the read-only repository profile against a stdio server")
     run.add_argument("--config", required=True, type=Path)
     run.add_argument("--output", required=True, type=Path, help="JSON report; adjacent .md report is also written")
-    run.add_argument("--native", action="store_true", help="explicitly allow host subprocess execution; containment remains UNKNOWN")
+    run.add_argument("--native", action="store_true",
+                     help="allow host subprocess execution (isolation=native); containment remains UNKNOWN")
+    run.add_argument("--isolation", choices=("native", "namespace"), default=None,
+                     help="execution backend: native (dev) or namespace (v0.2.0 target). "
+                          "No silent fallback between modes.")
     run.add_argument("--server-uid", type=int, help="privileged Linux parent only: drop the server to this nonzero UID")
     run.add_argument("--server-gid", type=int)
     args = parser.parse_args(argv)
-    if not args.native:
-        parser.error("v1 requires --native; run only reviewed servers in a disposable environment; containment cannot pass")
+
+    if args.isolation is None and args.native:
+        args.isolation = "native"
+    if args.isolation is None:
+        parser.error("choose an execution backend: --native (containment UNKNOWN) or --isolation namespace")
+    if args.native and args.isolation != "native":
+        parser.error("--native conflicts with --isolation " + args.isolation)
+
+    from .isolation import ExecutionMode, IsolationPolicy, get_backend
+    backend = get_backend(args.isolation)
+    policy = IsolationPolicy(
+        mode=ExecutionMode(args.isolation),
+        server_uid=args.server_uid,
+        server_gid=args.server_gid,
+    )
+    preflight = backend.preflight(policy)
+    if not preflight.ok:
+        # Fail closed: do not launch the subject when required controls are missing.
+        print(json.dumps({
+            "run_id": str(uuid.uuid4()),
+            "verdict": "INCOMPLETE",
+            "harness_error": "isolation preflight failed",
+            "isolation": {
+                "mode": args.isolation,
+                "reasons": preflight.reasons(),
+                "observed": preflight.observed,
+            },
+        }))
+        return 2
     run_id = str(uuid.uuid4())
     try:
         if args.output.suffix != ".json":
@@ -80,7 +111,8 @@ def main(argv: list[str] | None = None) -> int:
                    "verdict": "INCOMPLETE", "state": "RUNNING", "checks": []}
         atomic_write(args.output, json.dumps(pending, indent=2) + "\n")
         atomic_write(args.output.with_suffix(".md"), "# MCP Behavior assessment\n\nINCOMPLETE: run has not finished.\n")
-        report = Runner(config, args.server_uid, args.server_gid).run()
+        report = Runner(config, args.server_uid, args.server_gid,
+                        isolation_backend=backend, isolation_preflight=preflight).run()
         report["run_id"] = run_id
         report["state"] = "FINISHED"
         # JSON is the authoritative commit marker for this pair of files.
