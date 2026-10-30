@@ -2,9 +2,9 @@
 
 A standalone Linux CLI that drives a running MCP server and checks its behavior against independent fixtures.
 
-The question is narrow: **can a caller rely on this tool's results and failure reports, under this versioned profile?** The server's description is never the answer key. The runtime has no dependencies outside Python's standard library.
+The question is narrow: **can a caller rely on this tool's results and failure reports, under this versioned profile?** The server's description is never the answer key. The Python package uses only the standard library. Namespace preflight additionally needs Linux bubblewrap and an explicitly delegated cgroup-v2 directory.
 
-**Status: working 0.1.0 prototype.** Native subprocess execution cannot prove containment. Every native run includes a required security UNKNOWN, so an otherwise successful run is INCOMPLETE overall. Use reviewed test subjects in a disposable environment. This release does not certify arbitrary hostile binaries as safe to run.
+**Status: development version `0.2.0.dev3`, checkpoint 3; the original behavioral prototype was 0.1.0.** Native mode runs reviewed subjects and always keeps containment UNKNOWN. Namespace mode runs fixed trusted preflight helpers only; it launches **zero MCP subjects**, even when individual helper probes succeed. Overall containment remains unverified. Version 0.2.0 has not been released.
 
 ## Run the first proof
 
@@ -31,6 +31,46 @@ To install the CLI into an existing Python environment:
 python -m pip install .
 mcp-behavior --version
 ```
+
+## Namespace preflight and supervision checkpoint
+
+```bash
+PYTHONPATH=src python -m mcp_behavior run \
+  --config examples/reference.json \
+  --output out/namespace.json \
+  --isolation namespace
+```
+
+Expected at this checkpoint: **exit 2, FINISHED/INCOMPLETE, zero subject cases, containment UNKNOWN**. Preflight may launch controller-owned helper processes. It never launches the configured MCP command or falls back to native execution.
+
+To exercise the cgroup helper self-test, pass an existing, canonical, host-delegated directory with `cpu`, `memory` and `pids` controllers already enabled:
+
+```bash
+PYTHONPATH=src python -m mcp_behavior run \
+  --config examples/reference.json \
+  --output out/namespace.json \
+  --isolation namespace \
+  --cgroup-parent /sys/fs/cgroup/YOUR_DELEGATED_DIRECTORY
+```
+
+The path is a placeholder; a normal directory containing files named like cgroup controls is rejected. The harness creates and removes its own leaf and never enables parent controllers or changes parent limits. `--cgroup-parent` is rejected in native mode. The JSON report records the requested isolation policy and its digest separately from the profile/config digest.
+
+| Helper evidence | What it establishes |
+|---|---|
+| Host-path probe | Known nonempty private canary/answer fixtures are inaccessible in the candidate mount view; strict typed results and a fresh nonce are required |
+| TCP endpoint probe | Host positive controls arrive at controller-owned IPv4/IPv6 loopback listeners; isolated traffic is independently detected. Only these TCP paths are covered |
+| Cgroup supervision self-test | On a capable delegated host: limits read back, bootstrap membership verified before release, detached child observed, recursive kill followed by `populated=0`, empty membership and leaf removal |
+
+The helper supervisor requests a memory ceiling, zero swap, a PID ceiling, group OOM behavior, no nested cgroups and one CPU of bandwidth. It samples aggregate CPU usage against the configured CPU-seconds budget. This is a helper self-test, not a full stress test or supervision of an MCP server. Missing evidence, lost observer coverage, timeout, cutoff or failed cleanup remains an unsuccessful precondition; it never becomes a server PASS or an invented server FAIL.
+
+Run the optional live cgroup integration test only on an explicitly delegated host:
+
+```bash
+MCP_BEHAVIOR_CGROUP_PARENT=/sys/fs/cgroup/YOUR_DELEGATED_DIRECTORY \
+  PYTHONPATH=src python -m unittest discover -s tests -p test_supervisor.py -v
+```
+
+The default suite explicitly skips that live test when no delegated path is supplied. A skipped live test does not supply containment evidence. This development host exposes no cgroup filesystem and blocks the bubblewrap network-namespace operation; the reports retain those reasons.
 
 ## What v1 checks
 
@@ -80,6 +120,10 @@ Protocol conformance remains the official conformance suite's responsibility. Th
 
 HTTP, authentication, real-model runs, concurrent sessions, mutating-tool profiles, broad attack-surface benchmarking, commercial features and integrations are outside v1.
 
-The next engineering gate is an isolated runner with protected evidence storage, independently verified fixture permissions, descendant/process/network limits, and observation of unauthorized reads and transient writes. A fixed version of the real first test subject must then be retested. The passing reference implementation is a harness control, not evidence that the real subject was fixed.
+The next engineering gate is a supported-host acceptance run of the new helpers, followed by supervised Runner/transport integration with protected evidence storage, independently verified fixture permissions, complete network/process enforcement and external read/write/race observation. Synthetic helper success cannot waive these run-level gates. A fixed version of the real first test subject must then be retested. The passing reference implementation is a harness control, not evidence that the real subject was fixed.
 
-Read [the closed specification](docs/SPEC.md), [adversarial review and risk decisions](docs/ADVERSARIAL_REVIEW.md), and [implementation/proof status](docs/STATUS.md).
+Read the [behavioral specification](docs/SPEC.md), [architecture](docs/ARCHITECTURE.md), [acceptance roadmap](docs/ROADMAP.md), [adversarial review](docs/ADVERSARIAL_REVIEW.md), [current status and historical proof](docs/STATUS.md), [development handoff](docs/SDLC.md) and [changelog](CHANGELOG.md).
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
+
+Hosted verification attempt [41122595917](https://github.com/holeyfield33-art/mcp-behavior/actions/runs/41122595917), on 2026-10-30, failed before the live-helper job executed any steps and produced no job log. Its failure annotation was not retrievable in this session. No positive hosted containment evidence is recorded. [Checkpoint 3 PR #3](https://github.com/holeyfield33-art/mcp-behavior/pull/3) remains unmerged pending successful hosted verification; local validation is 108 passing tests with one explicitly skipped live cgroup test.

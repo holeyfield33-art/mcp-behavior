@@ -1,6 +1,6 @@
 # MCP Behavior — reviewed SDLC and handoff
 
-Review date: 2026-10-30. Implemented version: **0.1.0**. Next development target: **0.2.0, one validated Linux isolation backend**. Version 0.2.0 is not implemented or released.
+Review date: 2026-10-30. Current development package version: **0.2.0.dev3** (original prototype: 0.1.0). Next development target: **0.2.0, one validated Linux isolation backend**. Pre-release isolation helpers through checkpoint 3 are implemented; version 0.2.0 is not released and namespace MCP subject execution remains disabled.
 
 Repository: https://github.com/holeyfield33-art/mcp-behavior
 
@@ -40,9 +40,9 @@ The repository is now the development source of truth. The ZIP remains an immuta
 | Partial remote before repair | `14f90a4526eb715c72e77f377d4fb5cc064b75a7` |
 | Complete restoration commit | `15b8dbef8bc3501628a394ad2e45e0e89b3b113e` |
 
-The audit found 16 missing files and 11 differing files; five files already matched. No remote-only files existed. One commit restored the exact prototype tree while retaining the previous remote commit as its parent. All original 32 files remain unchanged when these handoff documents are added.
+The audit found 16 missing files and 11 differing files; five files already matched. No remote-only files existed. One commit restored the exact prototype tree while retaining the previous remote commit as its parent. At the restoration/handoff commit all original 32 files were unchanged. Later checkpoint code and documentation changes are recorded in Git history and CHANGELOG.md.
 
-`STATUS.md` and `proof/` describe the original 2026-10-29 prototype run. The statement there that no remote had been created is historical. This document records the 2026-10-30 repository repair and current handoff.
+`proof/` preserves the original 2026-10-29 prototype run. `STATUS.md` now records current checkpoints and labels the original proof as historical. This document records the 2026-10-30 repository repair and current handoff.
 
 ## 4. Non-negotiable verdict rules
 
@@ -62,15 +62,16 @@ The audit found 16 missing files and 11 differing files; five files already matc
 | Complete source, examples, documentation and original proof on GitHub | Restored, exact baseline tree |
 | Linux stdlib CLI, bounded stdio client and one inventory profile | Implemented |
 | Fixtures, content hashes, canaries, coverage/completion, paths, repeatability, snapshots and scripted repair | Implemented within the stated profile |
-| Automated tests | 38 passed on recovered source and on a fresh GitHub clone |
+| Automated tests | Original baseline 38; checkpoint 1: 48; checkpoint 2: 76; checkpoint 3: 109 discovered, 108 passed and one live-cgroup integration test explicitly skipped |
 | Fresh-clone reference run | Exit 2; readiness PASS; security INCOMPLETE; overall INCOMPLETE; 14 cases; no harness errors |
-| Isolated execution and verified containment | Not implemented |
+| Isolation helpers | Namespace host-path and finite TCP observers; delegated cgroup helper supervision, limit readback and detached-child cleanup contract implemented |
+| Isolated MCP execution and verified run-level containment | Not integrated; namespace subject launch disabled; capable-host positive proof pending |
 | Complete external read/write and race observation | Not implemented |
 | Fixed Sentinel-Zero acceptance run | Pending |
 | Finding-level scanner accuracy | Not established by inventory evidence |
 | HTTP, authentication, more tool types and real-model runs | Outside this development slice |
 
-The 38-test count is a baseline, not a permanent quota. New behavior needs meaningful new regression and negative-control cases. Subprocess/wire tests are part of this suite; calling all of them unit tests hides their scope.
+The 38-test count is the historical prototype baseline, not a permanent quota. A skipped live integration test supplies no acceptance evidence. The opt-in cgroup test requires MCP_BEHAVIOR_CGROUP_PARENT on a genuinely delegated host. New behavior needs meaningful new regression and negative-control cases. Subprocess/wire tests are part of this suite; calling all of them unit tests hides their scope.
 
 ## 6. Start from a clean checkout
 
@@ -111,7 +112,7 @@ An unavailable kernel feature or unsuitable test host is an environmental gate, 
 ## 7. Development order and change discipline
 
 1. Preserve the restored v0.1.0 tree and original proof as the baseline.
-2. Implement one isolation backend against the acceptance matrix in [ROADMAP.md](ROADMAP.md). Unsupported prerequisites must fail closed; no automatic native fallback.
+2. Validate the implemented namespace/TCP/cgroup helpers on a capable explicitly delegated Linux host, then integrate one supervised subject backend against [ROADMAP.md](ROADMAP.md). --cgroup-parent only selects an existing delegated path; never auto-enable parent controllers or change parent limits. Unsupported prerequisites must fail closed; no automatic native fallback.
 3. Add independent observation and synchronized race cases before expanding claims about reads/writes.
 4. Retest an actual fixed Sentinel-Zero release against the same four behavioral gates. Preserve both failing and fixed artifact/config/profile identities. The reference server cannot substitute for this gate.
 5. Decide on finding-level fixtures separately before claiming scanner correctness. HTTP/authentication and real-model experiments remain deferred.
@@ -133,3 +134,16 @@ Before publishing a change, verify a fresh checkout rather than a worktree with 
 - [ ] Fixed real-subject acceptance run completed.
 
 The final two items are future development gates, not prerequisites for acknowledging that the repository repair is complete.
+
+
+## 9. Checkpoint 3 handoff
+
+Implementation: fixed trusted infrastructure helpers, not configured MCP commands. Network evidence covers named IPv4/IPv6 loopback TCP endpoints with external receipts and mandatory host positive controls. The cgroup self-test requires genuine delegated v2 controls; it verifies new-leaf limit readback, join-before-release, detached-child membership and recursive kill/empty/removal. CPU bandwidth and sampled lifetime CPU budgets are reported separately. Reported isolation policy has its own digest.
+
+Host result: loopback positive controls work, the bubblewrap namespace operation is blocked, and no cgroup filesystem is exposed here. Keep the live cgroup test skipped/explicitly missing until MCP_BEHAVIOR_CGROUP_PARENT names a capable delegated host. Resource-stress acceptance, full network coverage, actual Runner/transport supervision, protected oracle/controller storage and external read/write/race observation remain open. Both direct and Runner namespace launches must remain disabled until their required run-level gates are real.
+
+Update every current user-facing document and CHANGELOG.md when checkpoint behavior changes. Keep proof/ immutable. Preserve exact uploaded tree identity, local versus live evidence distinctions, installed-wheel verification and a fresh-checkout test result in the PR before merge.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
+
+Hosted verification attempt [41122595917](https://github.com/holeyfield33-art/mcp-behavior/actions/runs/41122595917), on 2026-10-30, failed before the live-helper job executed any steps and produced no job log. Its failure annotation was not retrievable in this session. No positive hosted containment evidence is recorded. [Checkpoint 3 PR #3](https://github.com/holeyfield33-art/mcp-behavior/pull/3) remains unmerged pending successful hosted verification; local validation is 108 passing tests with one explicitly skipped live cgroup test.

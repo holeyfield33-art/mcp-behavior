@@ -1,6 +1,6 @@
 # Adversarial review of the proposed harness
 
-Review date: 2026-10-29. Decision: GO for the standalone behavioral prototype and local proof; NO-GO for claiming full security certification or running arbitrary hostile servers on the host.
+Initial review: 2026-10-29; updated for checkpoint 3 on 2026-10-30. Decision: GO for the standalone behavioral prototype and local proof; NO-GO for claiming full security certification or running arbitrary hostile servers on the host.
 
 The original two rules are retained: the target never supplies the answer key, and harness interception never turns a target failure into PASS. The most dangerous remaining failures are false assurance from an unprotected oracle, weak adapters, insufficient observation, and unsupported cases disappearing from the denominator.
 
@@ -68,3 +68,29 @@ The original two rules are retained: the target never supplies the answer key, a
 | Supply chain / signed certification | Explicit governance, signing/revocation/expiry and reproducible builds; no badge or certification service in this scope |
 
 These are not waved through as successful tests. Native containment is required UNKNOWN, and every report states observational and identity limitations. Broader profiles require their own gates before a broader claim is allowed.
+
+
+## Isolation checkpoint review — 2026-10-30
+
+| Risk | Implemented control / evidence limit |
+|---|---|
+| Empty, malformed or stale helper output becomes isolation success | Strict complete typed schema, fresh nonce, known nonempty private secrets and explicit failed preconditions |
+| Probe and subject paths refer to different mount layouts | One canonical absolute workspace layout; protected-path mount overlap rejected; subject launch still disabled |
+| Helper inherits credentials or controller descriptors | Minimal environment and closed descriptors; only trusted cgroup bootstrap gets narrow join/release channels, closed before its workload phase |
+| Network helper lies or observer silence is called denial | External IPv4/IPv6 TCP receipts, mandatory real host positive controls and strict helper coverage; isolated receipts defeat claimed denial |
+| Unsupported network families, unexpected traffic or broken shutdown disappear | Explicit observer failure; finite TCP coverage stated; no general egress or run-level grade |
+| Ordinary files impersonate kernel controls | Genuine cgroup-v2 filesystem check before creation; required existing delegation; no automatic parent changes |
+| Configured resource limits are assumed enforced | New-leaf writes and readback; sampled aggregate CPU separate from CPU bandwidth; actual resource-stress proof remains pending |
+| Helper executes before joining its cgroup | Trusted bootstrap blocks on release; controller verifies sole membership and resource evidence first |
+| Session-detached child escapes process-group cleanup | Fixed detached-child self-test with cgroup.kill, recursive populated=0, empty membership and leaf removal; live delegated-host test pending |
+| Fallback termination erases failed teardown | Failed cgroup cleanup remains failed evidence even after fixed-helper pidfd fallback |
+| Synthetic successes unlock arbitrary MCP execution | Runner and launch_subject remain independently disabled for namespace subjects; all successful-probe regression still yields INCOMPLETE |
+| Documentation claims shipped isolation from prototype version | README, specification, status, architecture, roadmap, SDLC and changelog distinguish pre-release helper work from run-level protection |
+
+Default validation includes an explicitly skipped live cgroup integration test. Ordinary-file contract models and this host's blocked namespace operation cannot establish a positive kernel containment result. The open-risk table above remains in force; no security-certification gate is closed by these helper observations alone.
+
+Checkpoint 3 is identified in package metadata and reports as `0.2.0.dev3`; this development version does not grant a stable 0.2.0 release or containment verdict.
+
+Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
+
+Hosted verification attempt [41122595917](https://github.com/holeyfield33-art/mcp-behavior/actions/runs/41122595917), on 2026-10-30, failed before the live-helper job executed any steps and produced no job log. Its failure annotation was not retrievable in this session. No positive hosted containment evidence is recorded. [Checkpoint 3 PR #3](https://github.com/holeyfield33-art/mcp-behavior/pull/3) remains unmerged pending successful hosted verification; local validation is 108 passing tests with one explicitly skipped live cgroup test.

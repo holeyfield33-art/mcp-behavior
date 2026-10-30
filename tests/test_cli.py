@@ -14,6 +14,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CliTests(unittest.TestCase):
+    def test_native_mode_rejects_namespace_only_cgroup_option(self):
+        with patch("mcp_behavior.cli.Runner") as runner, \
+             contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            main(["run", "--config", "unused", "--output", "unused.json", "--native",
+                  "--cgroup-parent", "/sys/fs/cgroup/delegated"])
+        runner.assert_not_called()
+        self.assertEqual(error.exception.code, 2)
+
     def test_native_execution_requires_explicit_flag(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
             main(["run", "--config", "unused", "--output", "unused.json"])

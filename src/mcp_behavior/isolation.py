@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .namespace_runtime import LaunchPlan, ProbeResult, prepare_isolation_dirs, run_host_canary_probe, tool_preflight
+from .network_probe import run_network_probe
+from .supervisor import SupervisorLimits, run_cgroup_probe
 
 
 class ExecutionMode(StrEnum):
@@ -53,6 +55,7 @@ class IsolationPolicy:
     cpu_seconds: int = 30
     max_pids: int = 64
     network: str = "deny"  # deny | inherit (inherit only valid for native)
+    cgroup_parent: str | None = None
 
 
 class IsolationBackend:
@@ -149,12 +152,14 @@ class NamespaceBackend(IsolationBackend):
             return PreflightResult(mode=self.mode, ok=False, findings=findings, observed=observed)
         findings.append(PreflightFinding("platform", True, "linux"))
 
-        cgroup_v2 = Path("/sys/fs/cgroup/cgroup.controllers").is_file()
+        parent = Path(policy.cgroup_parent) if policy.cgroup_parent is not None else None
+        controller_file = (parent or Path("/sys/fs/cgroup")) / "cgroup.controllers"
+        cgroup_v2 = controller_file.is_file()
         observed["cgroup_v2"] = cgroup_v2
         findings.append(PreflightFinding(
             "cgroup_v2",
             cgroup_v2,
-            "cgroup v2 controllers file present" if cgroup_v2 else "cgroup v2 not available at /sys/fs/cgroup",
+            f"feature-file observation only: {controller_file}; present={cgroup_v2}",
             required=True,
         ))
 
@@ -171,6 +176,7 @@ class NamespaceBackend(IsolationBackend):
         observed["namespace_tools"] = {"ok": tools.ok, "detail": tools.detail, **tools.evidence}
         findings.append(PreflightFinding("namespace_tools", tools.ok, tools.detail))
         probe = ProbeResult(False, f"probe not run: {tools.detail}")
+        network_probe = ProbeResult(False, f"probe not run: {tools.detail}")
         if tools.ok:
             try:
                 with tempfile.TemporaryDirectory(prefix="mcp-behavior-isolation-") as tmp:
@@ -182,10 +188,19 @@ class NamespaceBackend(IsolationBackend):
                     plan = LaunchPlan(workspace, [], canary, oracle_dir,
                                       policy.memory_mib, policy.cpu_seconds, policy.max_pids)
                     probe = run_host_canary_probe(plan, token)
+                    network_probe = run_network_probe(plan, token)
             except (OSError, ValueError) as exc:
                 probe = ProbeResult(False, f"probe fixture setup failed: {exc}")
+                network_probe = ProbeResult(False, f"network probe fixture setup failed: {exc}")
         observed["host_path_probe"] = {"ok": probe.ok, "detail": probe.detail, "evidence": probe.evidence}
         findings.append(PreflightFinding("host_path_probe", probe.ok, probe.detail))
+        observed["network_endpoint_probe"] = {"ok": network_probe.ok, "detail": network_probe.detail,
+                                               "evidence": network_probe.evidence}
+        findings.append(PreflightFinding("network_endpoint_probe", network_probe.ok, network_probe.detail))
+        supervisor = run_cgroup_probe(parent, SupervisorLimits(policy.memory_mib, policy.cpu_seconds, policy.max_pids))
+        observed["cgroup_supervisor_probe"] = {"ok": supervisor.ok, "detail": supervisor.detail,
+                                               "evidence": supervisor.evidence}
+        findings.append(PreflightFinding("cgroup_supervisor_probe", supervisor.ok, supervisor.detail))
 
         findings.append(PreflightFinding(
             "launcher_implemented",
@@ -202,19 +217,19 @@ class NamespaceBackend(IsolationBackend):
         findings.append(PreflightFinding(
             "network_denial",
             False,
-            "network namespace denial not yet externally verified",
+            "synthetic TCP endpoint evidence does not verify all egress or an actual subject run",
             required=True,
         ))
         findings.append(PreflightFinding(
             "aggregate_resources",
             False,
-            "cgroup-wide resource limits not yet enforced or externally verified",
+            "cgroup helper self-test does not enforce or verify limits on an actual subject run",
             required=True,
         ))
         findings.append(PreflightFinding(
             "teardown_verified",
             False,
-            "cgroup-wide teardown observer not yet implemented",
+            "detached-helper cleanup does not verify teardown of an actual subject run",
             required=True,
         ))
 

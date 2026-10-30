@@ -1,0 +1,90 @@
+name: Linux checkpoint checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Deterministic suite (live cgroup test explicitly skips without delegation)
+        run: PYTHONPATH=src python3 -m unittest discover -s tests -v
+
+  live-helpers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install bubblewrap on the disposable CI VM
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap
+          bwrap --version
+      - name: Prepare an explicit disposable cgroup delegation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /sys/fs/cgroup/cgroup.controllers
+          # CI host setup only. The harness never changes parent controls.
+          sudo sh -c 'printf "%s\n" "+cpu +memory +pids" > /sys/fs/cgroup/cgroup.subtree_control'
+          checkpoint_group="/sys/fs/cgroup/mcp-behavior-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          sudo mkdir "$checkpoint_group"
+          echo "MCP_BEHAVIOR_CGROUP_PARENT=$checkpoint_group" >> "$GITHUB_ENV"
+          sudo sh -c 'printf "%s\n" "+cpu +memory +pids" > "$1/cgroup.subtree_control"' sh "$checkpoint_group"
+      - name: Live cgroup join, limit readback and detached-helper teardown
+        run: |
+          sudo env PYTHONPATH=src MCP_BEHAVIOR_CGROUP_PARENT="$MCP_BEHAVIOR_CGROUP_PARENT" \
+            python3 -m unittest discover -s tests -p test_supervisor.py -v
+      - name: Collect finite namespace-helper evidence without launching an MCP subject
+        run: |
+          sudo env PYTHONPATH=src MCP_BEHAVIOR_CGROUP_PARENT="$MCP_BEHAVIOR_CGROUP_PARENT" python3 - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          output = Path("out/github-namespace.json")
+          result = subprocess.run(
+              [sys.executable, "-m", "mcp_behavior", "run", "--config", "examples/reference.json",
+               "--output", str(output), "--isolation", "namespace",
+               "--cgroup-parent", os.environ["MCP_BEHAVIOR_CGROUP_PARENT"]],
+              capture_output=True, text=True, timeout=60,
+          )
+          assert result.returncode == 2, (result.returncode, result.stdout, result.stderr)
+          summary = json.loads(result.stdout)
+          report = json.loads(output.read_text())
+          assert report["state"] == "FINISHED"
+          assert report["run_id"] == summary["run_id"]
+          assert report["verdict"] == "INCOMPLETE" and report["case_count"] == 0
+          assert not report["isolation"]["subject_launch_supported"]
+          assert not report["harness_errors"], report["harness_errors"]
+          for key in ("host_path_probe", "network_endpoint_probe", "cgroup_supervisor_probe"):
+              probe = report["isolation"]["observed"][key]
+              assert probe["ok"], (key, probe)
+          check = next(c for c in report["checks"] if c["id"] == "execution_containment")
+          assert check["status"] == "UNKNOWN"
+          print(json.dumps(summary))
+          PY
+      - name: Remove only the disposable CI delegation
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${MCP_BEHAVIOR_CGROUP_PARENT:-}" ] && [ -d "$MCP_BEHAVIOR_CGROUP_PARENT" ]; then
+            sudo sh -c 'printf "1\n" > "$1/cgroup.kill"' sh "$MCP_BEHAVIOR_CGROUP_PARENT"
+            sudo find "$MCP_BEHAVIOR_CGROUP_PARENT" -mindepth 1 -maxdepth 1 -type d \
+              -name 'mcp-behavior-*' -exec rmdir {} +
+            sudo rmdir "$MCP_BEHAVIOR_CGROUP_PARENT"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: namespace-helper-evidence
+          path: out/github-namespace.*
+          if-no-files-found: ignore
+          retention-days: 7
