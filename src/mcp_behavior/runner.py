@@ -17,6 +17,7 @@ from typing import Any
 from . import __version__
 from .config import Config, canonical, digest
 from .fixtures import Fixture, bounded_hash, build_fixture, snapshot
+from .isolation import ExecutionMode, IsolationBackend, IsolationPolicy, NativeBackend, PreflightResult
 from .model import Check, ContractError, HarnessError, ServerFault, Status, UnsupportedEvidence, verdict
 from .oracle import Answer, at, decode, fixture_checks, reasoned_error, repeatable_payload
 from .transport import StdioClient, child_setup
@@ -27,7 +28,9 @@ CASES = ("normal", "missing", "file_as_root", "relative", "outside", "traversal"
 
 
 class Runner:
-    def __init__(self, config: Config, uid: int | None = None, gid: int | None = None):
+    def __init__(self, config: Config, uid: int | None = None, gid: int | None = None,
+                 isolation_backend: IsolationBackend | None = None,
+                 isolation_preflight: PreflightResult | None = None):
         if sys.platform != "linux":
             raise HarnessError("v1 requires Linux")
         if uid is not None and (type(uid) is not int or uid <= 0 or os.geteuid() != 0):
@@ -36,6 +39,16 @@ class Runner:
             raise HarnessError("--server-gid requires --server-uid and a nonnegative GID")
         self.config = config
         self.uid, self.gid = uid, gid
+        self.isolation_backend = isolation_backend if isolation_backend is not None else NativeBackend()
+        self.isolation_policy = IsolationPolicy(
+            mode=self.isolation_backend.mode, server_uid=uid, server_gid=gid,
+            memory_mib=config.limits.memory_mib, cpu_seconds=config.limits.cpu_seconds,
+            network="inherit" if self.isolation_backend.mode == ExecutionMode.NATIVE else "deny",
+        )
+        self.isolation_preflight = (isolation_preflight if isolation_preflight is not None
+                                    else self.isolation_backend.preflight(self.isolation_policy))
+        if self.isolation_preflight.mode != self.isolation_backend.mode:
+            raise HarnessError("isolation preflight mode does not match the selected backend")
         self.checks: list[Check] = []
         self.cases: list[dict[str, Any]] = []
         self.errors: list[dict[str, str]] = []
@@ -48,6 +61,21 @@ class Runner:
 
     def add(self, id: str, lane: str, status: Status, reason: str, **evidence: Any) -> None:
         self.checks.append(Check(id, lane, status, reason, evidence))
+
+    def execution_allowed(self) -> bool:
+        # Checkpoint 1 implements an interface and probes, not a namespace launcher.
+        # Feature presence or an injected successful probe must not start a native
+        # subprocess while the report says namespace isolation was selected.
+        return self.isolation_preflight.ok and self.isolation_backend.mode == ExecutionMode.NATIVE
+
+    def isolation_evidence(self) -> dict[str, Any]:
+        return {"mode": self.isolation_backend.mode.value,
+                "preflight_ok": self.isolation_preflight.ok,
+                "requested_policy": vars(self.isolation_policy),
+                "findings": [vars(f) for f in self.isolation_preflight.findings],
+                "observed": self.isolation_preflight.observed,
+                "reasons": self.isolation_preflight.reasons(),
+                "subject_launch_supported": self.isolation_backend.mode == ExecutionMode.NATIVE}
 
     def identity(self) -> dict[str, Any]:
         files = list(self.config.artifacts)
@@ -165,6 +193,8 @@ print(json.dumps(result))
         evidence: dict[str, Any] = {"id": label, "input_manifest": fixture.hash_manifest(),
                                     "unsafe_entries": sorted(fixture.problems), "root": str(fixture.root)}
         try:
+            if not self.execution_allowed():
+                raise UnsupportedEvidence("selected isolation backend is not ready to launch a subject")
             self.preflight(fixture)
             evidence["preconditions"] = dict(fixture.preconditions)
             client = StdioClient(self.config.command, fixture.cwd, fixture.root, fixture.home,
@@ -258,14 +288,7 @@ print(json.dumps(result))
                 os.close(fd)
             fixture.read_fds.clear()
 
-    def run(self) -> dict[str, Any]:
-        self.suite_deadline = time.monotonic() + self.config.limits.suite_timeout_seconds
-        try:
-            before_identity = self.identity()
-        except (OSError, HarnessError) as exc:
-            before_identity = {"reviewer_declared": self.config.identity, "error": type(exc).__name__, "reason": str(exc)[:512]}
-            self.errors.append({"case": "identity", "kind": type(exc).__name__, "message": str(exc)[:512]})
-            self.add("artifact_identity", "readiness", Status.UNKNOWN, "could not hash the configured server artifacts")
+    def collect_cases(self) -> None:
         with tempfile.TemporaryDirectory(prefix="mcp-behavior-") as temporary:
             parent = Path(temporary)
             normal: Fixture | None = None
@@ -283,6 +306,21 @@ print(json.dumps(result))
                     self.add(name + ".setup", "readiness", Status.UNKNOWN, "fixture setup failed; scenario was not tested", kind=type(exc).__name__)
             if normal is not None and time.monotonic() < self.suite_deadline:
                 self.execute(normal, label="normal_fresh")
+
+    def run(self) -> dict[str, Any]:
+        self.suite_deadline = time.monotonic() + self.config.limits.suite_timeout_seconds
+        try:
+            before_identity = self.identity()
+        except (OSError, HarnessError) as exc:
+            before_identity = {"reviewer_declared": self.config.identity, "error": type(exc).__name__, "reason": str(exc)[:512]}
+            self.errors.append({"case": "identity", "kind": type(exc).__name__, "message": str(exc)[:512]})
+            self.add("artifact_identity", "readiness", Status.UNKNOWN, "could not hash the configured server artifacts")
+        if self.execution_allowed():
+            self.collect_cases()
+        else:
+            self.add("isolation_preflight", "security", Status.UNKNOWN,
+                     "selected isolation backend cannot launch a subject; no fixture probes or MCP sessions were started",
+                     **self.isolation_evidence())
         if len(self.repeat_values) < 3:
             self.add("repeatability", "readiness", Status.UNKNOWN, "three usable results across same and fresh sessions were not collected")
         else:
@@ -306,11 +344,9 @@ print(json.dumps(result))
                      "configured artifact bytes stayed fixed" if stable else "configured artifact bytes changed during the run")
         except (OSError, HarnessError) as exc:
             self.add("artifact_stability", "security", Status.UNKNOWN, "could not collect final artifact identity", kind=type(exc).__name__)
-        self.add("execution_containment", "security", Status.UNKNOWN,
-                 "native subprocess mode does not isolate host files, network, same-UID processes, or escaped descendants",
-                 mode="native", server_uid=self.uid if self.uid is not None else os.geteuid(),
-                 no_new_privileges_requested=True, drop_linux_capabilities_requested=True,
-                 resource_limits_are_not_a_sandbox=True)
+        containment_status, containment_reason, containment_evidence = self.isolation_backend.containment_check(self.isolation_preflight)
+        self.add("execution_containment", "security", Status(containment_status), containment_reason,
+                 **containment_evidence, resource_limits_are_not_a_sandbox=True)
         self.checks.append(Check("real_model_recovery", "agent_run", Status.NA,
                                  "real-model runs are outside v1 and never substitute for fixture grades", required=False))
         lanes = {name: verdict([c for c in self.checks if c.lane == name]) for name in ("readiness", "security")}
@@ -320,7 +356,8 @@ print(json.dumps(result))
                 "verdict": verdict(self.checks), "lanes": lanes,
                 "scope": "Finite Linux stdio, synchronous, read-only repository profile; not protocol conformance or a general security certification.",
                 "target": before_identity, "config_sha256": self.config.config_sha256,
-                "execution": {"mode": "native", "server_uid": self.uid if self.uid is not None else os.geteuid(),
+                "isolation": self.isolation_evidence(),
+                "execution": {"mode": self.isolation_backend.mode.value, "server_uid": self.uid if self.uid is not None else os.geteuid(),
                               "server_gid": self.gid if self.gid is not None else self.uid if self.uid is not None else os.getegid(),
                               "environment_policy": "minimal-v1"},
                 "profile": {"id": self.config.profile.id, "version": self.config.profile.version,

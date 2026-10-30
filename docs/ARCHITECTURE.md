@@ -45,6 +45,12 @@ Required properties (must be **observed**, not only requested):
 - Unsupported kernels or missing privileges fail closed with a structured reason.
 - Original v0.1.0 proof artifacts remain immutable under `proof/`.
 
+### Checkpoint 1 behavior
+
+The backend interface, feature probes, runner/report wiring and CLI selection are implemented at this checkpoint. Namespace subject launch and external acceptance observers are still unimplemented. A namespace request produces a fresh FINISHED/INCOMPLETE report with zero cases and explicit preflight reasons. It starts neither fixture-probe subprocesses nor MCP subjects, and never falls back to native execution.
+
+Native execution retains required containment UNKNOWN and the existing behavioral checks. Requested resource limits come from the run configuration; feature-file presence is recorded as a probe observation, not as proof that a namespace/cgroup policy was enforced. Even a successful feature probe cannot authorize a namespace launch at this checkpoint.
+
 ## Alternatives considered
 
 | Alternative | Why not now |
