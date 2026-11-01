@@ -16,10 +16,6 @@ Decision: **GO for reviewed local behavioral runs and trusted-helper development
 
 Helper live evidence (stated disposable Ubuntu container / private cgroup namespace): 109 tests passed including live cgroup supervisor; namespace smoke exit 2 / INCOMPLETE / zero subjects when launch disabled. Hosted CI may be blocked by account billing—unrun jobs are not cgroup diagnoses.
 
-## Software Research Studio
-
-Product work is linked from the Studio archive at https://github.com/holeyfield33-art/software-research-studio (`linked_products/mcp-behavior.md`). The Studio freeze (SRS-FREEZE-2026-10-31-v1) is knowledge-only and immutable; it does not subsume this repository's roadmap or evidence requirements. See [STUDIO_LINK.md](STUDIO_LINK.md).
-
 ## Next action
 
 Finish run-level subject matrix and fixed Sentinel-Zero retest per [ROADMAP.md](ROADMAP.md). Do not claim containment PASS from helper evidence alone.
