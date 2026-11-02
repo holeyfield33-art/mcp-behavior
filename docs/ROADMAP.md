@@ -4,6 +4,8 @@ Status: checkpoint 3 helper evidence recorded; checkpoint 4 experimental subject
 
 One development slice: run the existing stdio inventory profile in an independently validated Linux isolation backend. Keep the v0.1.0 profile and reference controls working. Do not add HTTP, authentication, tool families, a model judge or commercial features in this slice.
 
+**Current evidence/priority owner:** [STATUS.md](STATUS.md) supersedes dated progress statements for present readiness. See [SDLC §10](SDLC.md#10-repository-maintenance-and-owasp-phase-coverage) for change-triggered, post-host-change and periodic maintenance checks. The acceptance matrix below remains the design/release authority for tests; its open cases do **not** mean all previously implemented finite controls are absent. Source, environment and independent oracles determine evidence quality, not the title of a checkpoint.
+
 ## 1. Architecture decision before implementation
 
 Record one backend choice and its supported kernel/runtime prerequisites. A Linux namespace/cgroup backend must provide a distinct subject identity, filesystem and process boundaries, no-new-privileges/capability policy, network denial and controller-owned limits. A dedicated VM is an alternative architecture requiring equivalent acceptance evidence, not a second backend to build simultaneously.
@@ -14,7 +16,7 @@ Startup must verify actual protections externally. A successful launcher invocat
 
 ## 2. Required acceptance matrix
 
-Every row needs an independent observer, an intentional failing control and a machine-readable result bound to the same run. All rows below are open.
+Every row needs an independent observer, an intentional failing control and a machine-readable result bound to the same run. **Full-scope closure remains open**; some finite subcases have bounded historical evidence in [SUBJECT_ACCEPTANCE.md](SUBJECT_ACCEPTANCE.md), but they do not complete the broader matrix.
 
 | Gate | Required external evidence | Deliberate failure/control |
 |---|---|---|

@@ -4,6 +4,8 @@
 **Date:** 2026-10-30  
 **Decision:** One Linux **user/mount/pid/network/UTS/IPC namespace + cgroup v2** backend for subject isolation. A dedicated VM is an alternative architecture requiring equivalent acceptance evidence; it is not built in parallel.
 
+**Current operating state:** use [STATUS.md](STATUS.md) rather than historical checkpoint sections for readiness. This document owns the architecture and trust-boundary decision. Ongoing host/runtime configuration, security verification and maintenance follow [SDLC §10](SDLC.md#10-repository-maintenance-and-owasp-phase-coverage). The isolation choice is not itself evidence of containment PASS.
+
 ## Context
 
 v0.1.0 native subprocess mode cannot prove containment. Same-UID subjects can reach oracle/report storage; network and host paths are not denied; escaped descendants are not group-limited. ROADMAP §1 requires one backend with external evidence before any containment PASS.

@@ -1,4 +1,6 @@
-# MCP Behavior — reviewed SDLC and handoff
+# MCP Behavior — engineering SDLC, maintained contracts and historical handoffs
+
+**Current truth:** [STATUS.md](STATUS.md) owns present code/release state and priorities; [AGENTS.md](../AGENTS.md) is the root model entrypoint. Sections 1–9 preserve dated restoration/design and checkpoint history and do not authorize new runs. **Section 10** is the current OWASP-informed maintenance procedure. No previous run is promoted to a current PASS by this documentation change.
 
 Review date: 2026-10-30. Current development package version: **0.2.0.dev5** (original prototype: 0.1.0). Next development target: **0.2.0, one validated Linux isolation backend**. Checkpoint 3 helper live evidence is recorded for its stated container environment. Checkpoint 4 adds experimental, explicitly opted-in supervised subject sessions. Version 0.2.0 is not released and containment remains UNKNOWN.
 
@@ -55,7 +57,7 @@ The audit found 16 missing files and 11 differing files; five files already matc
 7. A quiet canary does not prove no unauthorized read; final snapshots do not prove no transient write. Claim only the named observed property.
 8. A protocol handshake identity is server-reported. Explicit file hashes are not a sealed runtime dependency closure.
 
-## 5. Current status
+## 5. Historical checkpoint status (current authority: [STATUS.md](STATUS.md))
 
 | Area | State |
 |---|---|
@@ -109,7 +111,7 @@ PY
 
 An unavailable kernel feature or unsuitable test host is an environmental gate, not permission to remove containment UNKNOWN or waive tests. Capture the precise failure and use an appropriate Linux environment.
 
-## 7. Development order and change discipline
+## 7. Historical development order and change discipline (current priorities: [STATUS.md](STATUS.md))
 
 1. Preserve the restored v0.1.0 tree and original proof as the baseline.
 2. Validate the implemented namespace/TCP/cgroup helpers on a capable explicitly delegated Linux host, then integrate one supervised subject backend against [ROADMAP.md](ROADMAP.md). --cgroup-parent only selects an existing delegated path; never auto-enable parent controllers or change parent limits. Unsupported prerequisites must fail closed; no automatic native fallback.
@@ -123,7 +125,7 @@ Keep original proof immutable. New runs go to `out/` or a distinct versioned pro
 
 Before publishing a change, verify a fresh checkout rather than a worktree with untracked dependencies. Run relevant tests and the reference smoke; for package changes, build/install the wheel and smoke it outside the source tree. Verify GitHub's resulting commit/tree after updating the branch.
 
-## 8. Definition of done for this handoff
+## 8. Historical definition of done for restoration handoff
 
 - [x] All 32 prototype files restored; root tree equals the bundled tree at restoration commit.
 - [x] Remote history retained; branch update used the observed expected head.
@@ -147,3 +149,50 @@ Update every current user-facing document and CHANGELOG.md when checkpoint behav
 Linux CI is configured in `.github/workflows/checkpoints.yml` for deterministic checks and live trusted-helper acceptance on an explicitly delegated disposable VM, with JSON evidence retained as an artifact. Hosted results must be inspected; an unrun or infrastructure-blocked job supplies no containment evidence. The harness never enables parent controllers; delegation setup belongs to the CI host fixture.
 
 Subsequent state: PR #3 is merged as d434494; local capable-host helper validation is 109 passed, zero skipped. Hosted run 41133686609 never started because of a confirmed account billing lock. Checkpoint 4 and finite actual-subject acceptance supersede this historical handoff; see SUBJECT_ACCEPTANCE.md. Full containment remains UNKNOWN.
+
+
+## 10. Repository maintenance and OWASP phase coverage
+
+This is the **project-specific maintenance contract**, adapted from the [OWASP Web Security Testing Framework](https://wstg.owasp.org/stable/3-The_OWASP_Testing_Framework/0-The_Web_Security_Testing_Framework/) and the existing [Studio repository knowledge/maintenance guide](https://github.com/holeyfield33-art/software-research-studio/blob/main/docs/REPOSITORY_KNOWLEDGE_LAYOUT.md). Both provide **selection guidance**; they do not add a Studio engine dependency, require a waterfall process, confer certification or authorize hostile-subject execution. The target's implementation and tool output are untrusted. The existing profile, isolation invariants and independent oracles still govern the product.
+
+### Ownership of facts and documents
+
+- [README](../README.md): user-facing product and examples. [AGENTS](../AGENTS.md): **one** agent entrypoint and read order. [STATUS](STATUS.md): **one** mutable authority for current revision, evidence, decisions, blockers and next actions.
+- [SPEC](SPEC.md): behavioral requirements, profile assumptions and independent-oracle semantics. [ARCHITECTURE](ARCHITECTURE.md): controller/subject trust split and backend decisions. [ROADMAP](ROADMAP.md): detailed acceptance matrix and longer-term candidate milestones. The prior numbered sections of this SDLC remain historical design/restoration evidence; **do not append session-by-session current handoffs here**.
+- [SUBJECT_ACCEPTANCE](SUBJECT_ACCEPTANCE.md), [CHECKPOINT4](CHECKPOINT4.md), [ADVERSARIAL_REVIEW](ADVERSARIAL_REVIEW.md) and `proof/`: bounded historical evidence and open attack scenarios; do not overwrite preserved reports or interpret a test on one kernel as a general product guarantee.
+- Operator/maintainer approves subjects, capabilities, review cadence and releases. Host operator owns real Linux/cgroup/strace/bubblewrap constraints. Independent reviewer checks consequential containment and scoring claims. If an owner or authoritative CI revision is unknown, record `UNKNOWN`, not a fabricated approval.
+
+### OWASP testing stages selected for MCP Behavior
+
+| Stage | Relevant product-specific review | Concrete check/trace |
+| --- | --- | --- |
+| **Before development** | Pin project intent, Linux/Python support, security policy, authorized hosts/subjects, scoring invariants and quantitative criteria **before** implementation. Record independent oracle, positive/failing control and a measurable result for each proposed requirement. | Reviewed spec/profile and acceptance row; trace requirement → code/control → observed independent result. No automatic registration of assessed targets |
+| **Definition / design** | Challenge ambiguous use of `PASS`, `UNKNOWN`, `INCOMPLETE`, trusted versus server-reported identities and process controls; review controller/subject trust zones, isolation, evidence paths, failure attribution and recovery. Use a short diagram/ADR when relevant, not mandatory UML. | SPEC, ARCHITECTURE, scoped threat scenario and independent observer/negative control |
+| **Development** | Walk source flow (CLI/config → isolation/preflight → transport → oracle → verdict/evidence) before detailed review. Preserve FAIL precedence and no native fallback; test parser/transport boundaries, resource budgets, cancellation, observer loss, time-of-check/time-of-use, cgroup descendants, replay/determinism and malformed inputs as applicable. | Relevant `tests/` plus exact commands/outputs; add a failing regression before a fix where feasible |
+| **Release / deployment** | Separate local prototype usage from allowing new hosts or unknown subjects. Verify installed wheel, Python/runtime and bubblewrap/strace/cgroup prerequisites, required host permissions, network/mount/FD/credential containment, observer integrity and denial behavior on the **exact candidate/environment**. | Actually executed deterministic and live acceptance suites, explicit skips, independent host observables, reviewed rollback/recovery and owner release decision |
+| **Maintenance / operations** | Track upstream protocol/runtime/kernel/dependency changes, CI and environment drift, regressions, false assurance, source/proof integrity, documentation and incidents. After each meaningful code/config change, recheck the affected oracle and containment boundary on authorized environments and preserve evidence. | Current STATUS plus scoped CI/private proof artifacts and a retained issue/decision history |
+
+This is a **behavioral harness** rather than a general deployed web application. Web sessions, login/account controls and live penetration-testing of unrelated services are inapplicable unless the accepted product scope changes. Do not use any broad checklist as permission to add HTTP/auth/model scoring.
+
+### Repository maintenance triggers and checks
+
+| Trigger | Maintain and verify | Record |
+| --- | --- | --- |
+| **Every PR / code or policy change** | Pin HEAD, inspect diff and code flow, evaluate affected trust boundary, verify positive+negative controls and verdict precedence, rerun scoped suite; do not silently edit fixture answers, hash manifests or grading policy. Check README/CLI consistency and exact output/exit codes. | Changed requirement/control, code paths, test commands, PASS/FAIL/SKIP/NOT_RUN, review owner, rollback and current STATUS |
+| **Kernel/namespace/cgroup/bubblewrap/strace change** | Use an explicitly disposable delegated Linux host. Validate required capabilities and actual independent host evidence; test denied preflight, controller-owned fixtures, run-scoped cgroups, descendants, UID/paths, network, observer integrity and cleanup. No missing proof yields containment PASS. | Kernel/runtime/tool versions, capability matrix, source/runtime hashes, positive/unsafe controls, observed results and denied/UNKNOWN cases |
+| **Before packaging/releasing** | Rebuild/install the wheel in a clean environment outside checkout, run reference smoke and appropriately scoped live acceptance, verify release dependencies/provenance, CI executed steps on exact SHA, compatibility notes, version and recovery. Keep full 0.2.0 release HOLD until matrix and external subject gate close. | Release candidate SHA, environment, verified artifacts, independent review and authorized release/HOLD |
+| **After an authorized deployed/host change** | Re-evaluate actual fixture and host observables, forbidden canary access, report/oracle protection, resource ceilings, descendant cleanup, TCP evidence and exact machine-readable verdicts. Refuse silent native fallback or incident-contaminated proof. | Before/after result, host changes, explicit remaining UNKNOWN, rollback/containment decision |
+| **New vulnerability, protocol/host advisory or incident** | Recheck dependent Python, MCP stdio semantics, bubblewrap and kernel/WSL/cgroup assumptions, exposed observer or file/IPC channels, failed/hidden cases and recovery/credential paths. Use synthetic controlled reproductions; do not run untrusted targets casually. | Advisory revision, independent reproduction, affected versions, remediation, owner and deadline/trigger |
+| **Periodic health review** | **Proposed monthly**, subject to maintainer/host-owner agreement; inspect outstanding PR/issues, stale docs, test/CI environment, source/proof hashes, toolchain drift, open containment matrix, operator runbooks and unmet fixed-subject acceptance. More frequent after incidents/advisories; low-change archives may need less. | Date, exact head, actual checks/skips, open risks and next trigger. **Not automatically scheduled by this document** |
+| **Transfer / retirement** | Explicitly review authority and access revocation, confidential fixture/log retention, artifact custody, dependent users, rollback/cleanup and continuity. | Operator-approved disposition and custody without destructive default behavior |
+
+### One bounded maintenance change and evidence contract
+
+1. **Orient:** verify real branch/HEAD and dirty tree; read [STATUS](STATUS.md), affected SPEC/ARCHITECTURE and current tests, then select only relevant practices and requirements. If the target is not authorized or host safety is uncertain, restrict work to analysis/fixtures.
+2. **Define and preserve controls:** write the expected positive and deliberate failing behavior, external oracle and stop conditions; preserve the old output/manifest, avoid weakening the denominator or reclassifying absence of observation as safe.
+3. **Implement narrowly:** maintain existing profile, one backend and no target-derived grading. No unrelated architectural changes, scripts, dependencies or feature additions.
+4. **Verify correctly:** for a normal code change, `PYTHONPATH=src python3 -m unittest discover -s tests -v`; confirm documented reference smoke returns **exit 2 / INCOMPLETE**, not 0. When a capability claim changes, add an authorized live matrix with positive and unsafe controls and inspect raw kernel/observer evidence. Run clean-wheel smoke when packaging changes. `NOT_RUN`, `BLOCKED` and `SKIP` must not be renamed `PASS`.
+5. **Recheck release/host effects:** compare old/new evidence on pinned candidates; only an actual independent host review may authorize a stronger containment or product decision. If security-sensitive verification is blocked, HOLD the affected claim.
+6. **Update only owned facts:** record current SHA, environment, commands/results, incident or issue, owner, verdict, remaining unknowns and up to three next steps in `STATUS.md`. Put immutable run artifacts in approved external/versioned storage; do **not** mutate the original `proof/` directory. Update CHANGELOG for user-visible behavior and SPEC/ARCHITECTURE/ROADMAP only when their stable contract changes.
+
+**Current adoption scope:** documentation/agent workflow, not new enforcement code or executed CI. The older local 128-test result remains limited to its recorded environment; CI jobs that ran zero steps remain NOT_RUN. Full containment and fixed Sentinel-Zero acceptance remain open; no 0.2.0 release authorization or security certification follows from adopting this SDLC.
