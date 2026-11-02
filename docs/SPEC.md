@@ -1,5 +1,7 @@
 # Behavioral assessment specification 1.0.0
 
+**Process relationship:** [STATUS.md](STATUS.md) owns current release/verification facts and [SDLC §10](SDLC.md#10-repository-maintenance-and-owasp-phase-coverage) owns repository maintenance and OWASP-informed assurance. This file owns **requirements and behavioral semantics** only. Status or implementation claims elsewhere do not silently change this versioned profile; intentional changes require a reviewed revision, explicit tests and compatible migration notes.
+
 ## 1. Scope and trust model
 
 The harness launches a configured stdio MCP server, invokes one explicitly selected synchronous tool, supplies known fixtures, and independently checks its outputs and observable effects. It has its own repository, package, tests and specification. Other software can be a test subject; no implementation dependency on it is permitted.
