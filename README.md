@@ -6,6 +6,12 @@ The question is narrow: **can a caller rely on this tool's results and failure r
 
 **Status: development version `0.2.0.dev5`, experimental checkpoint 4; the original behavioral prototype was 0.1.0.** Native mode runs reviewed subjects and always keeps containment UNKNOWN. Namespace mode defaults to fixed trusted helpers and zero MCP subjects. Explicit `--namespace-subject` enables reviewed subject sessions only after the required helper probes pass. Overall containment remains UNKNOWN; the full run-level matrix is incomplete. Version 0.2.0 has not been released.
 
+## Engineering and maintenance entrypoints
+
+Coding agents: start with [AGENTS.md](AGENTS.md), then the [single current status](docs/STATUS.md), [specification](docs/SPEC.md), [architecture](docs/ARCHITECTURE.md), and [SDLC/maintenance procedure](docs/SDLC.md#10-repository-maintenance-and-owasp-phase-coverage). [ROADMAP.md](docs/ROADMAP.md) tracks incomplete acceptance cases; [SUBJECT_ACCEPTANCE.md](docs/SUBJECT_ACCEPTANCE.md) preserves the finite Linux experiment. Historical checkpoint notes and `proof/` are **evidence**, not alternative current plans.
+
+The SDLC now includes proportionate project discovery, CLI/UX contract, requirements and architecture review, negative-control development, authorized deployment/release verification, and repository maintenance. Studio contributed engineering knowledge and a prior scoped assessment **without any runtime integration or product link**. A documented gate is not an executed check: hosted CI jobs on current main executed zero steps, and full containment plus fixed Sentinel-Zero acceptance remain open.
+
 ## Run the first proof
 
 Requires Linux and Python 3.11 or newer.
