@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-01 — Studio-informed repository knowledge and maintenance (documentation only)
+
+- Added one root `AGENTS.md` for coding-agent read order, evidence honesty, bounded work and safety constraints.
+- Promoted existing `docs/STATUS.md` to the **single current evidence/readiness authority**, separating historical 109/122/128-test local results from hosted zero-step jobs and pending release gates.
+- Extended existing SDLC with a task-adaptive OWASP phase crosswalk, CLI/UX and threat/design/verification concerns, and project-specific repository maintenance (per-change, release/host-change, advisory, operator-approved periodic review, retirement).
+- Linked existing README, specification, architecture and roadmap to their authoritative roles; preserved stable profile, design decisions, finite subject evidence and original proof.
+- **No** harness code, workflow, fixture/scoring, sealed proof, release version or dependencies changed. No tests, live host/CI checks or periodic job were executed in this documentation update; containment remains UNKNOWN and 0.2.0 unreleased.
+
+
 ## Unreleased — 0.2.0.dev5, finite subject acceptance, 2026-10-30
 
 - Reject protected report/config/oracle mount overlaps and explicit artifact
