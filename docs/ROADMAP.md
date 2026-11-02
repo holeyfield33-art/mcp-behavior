@@ -16,7 +16,7 @@ Startup must verify actual protections externally. A successful launcher invocat
 
 ## 2. Required acceptance matrix
 
-Every row needs an independent observer, an intentional failing control and a machine-readable result bound to the same run. All rows below are open.
+Every row needs an independent observer, an intentional failing control and a machine-readable result bound to the same run. **Full-scope closure remains open**; some finite subcases have bounded historical evidence in [SUBJECT_ACCEPTANCE.md](SUBJECT_ACCEPTANCE.md), but they do not complete the broader matrix.
 
 | Gate | Required external evidence | Deliberate failure/control |
 |---|---|---|
