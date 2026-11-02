@@ -1,4 +1,6 @@
-# MCP Behavior — reviewed SDLC and handoff
+# MCP Behavior — engineering SDLC, maintained contracts and historical handoffs
+
+**Current truth:** [STATUS.md](STATUS.md) owns present code/release state and priorities; [AGENTS.md](../AGENTS.md) is the root model entrypoint. Sections 1–9 preserve dated restoration/design and checkpoint history and do not authorize new runs. **Section 10** is the current OWASP-informed maintenance procedure. No previous run is promoted to a current PASS by this documentation change.
 
 Review date: 2026-10-30. Current development package version: **0.2.0.dev5** (original prototype: 0.1.0). Next development target: **0.2.0, one validated Linux isolation backend**. Checkpoint 3 helper live evidence is recorded for its stated container environment. Checkpoint 4 adds experimental, explicitly opted-in supervised subject sessions. Version 0.2.0 is not released and containment remains UNKNOWN.
 
